@@ -1,0 +1,71 @@
+# OCaml build artifacts
+_build/
+*.install
+*.merlin
+
+# Dune artifacts
+.dune/
+
+# Generated files
+*.exe
+*.bc
+*.native
+
+# Editor files
+.vscode/
+.idea/
+*~
+*.swp
+*.swo
+.DS_Store
+
+# Generated SDKs (temporary outputs)
+generated/
+output/
+
+# Node.js (for generated TypeScript SDKs)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Python (for generated Python SDKs)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing artifacts
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+
+# OS files
+Thumbs.db
+.directory

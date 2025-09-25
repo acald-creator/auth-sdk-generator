@@ -1,0 +1,6 @@
+# Basic OAuth 2.0 specification for prototype testing
+name = "Prototype App"
+client_id = "your-google-client-id-here"
+authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
+token_url = "https://oauth2.googleapis.com/token"
+scopes = "openid,email,profile"

@@ -1,0 +1,4 @@
+(executable
+ (public_name auth-sdk-generator)
+ (name main)
+ (libraries auth_sdk_generator validators python_generator))

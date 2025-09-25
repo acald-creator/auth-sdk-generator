@@ -1,0 +1,6 @@
+(library
+ (public_name auth-sdk-generator.ast)
+ (name ast)
+ (libraries core)
+ (preprocess
+  (pps ppx_deriving.show)))

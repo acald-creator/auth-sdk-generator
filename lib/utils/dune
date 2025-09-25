@@ -1,0 +1,4 @@
+(library
+ (public_name auth-sdk-generator.utils)
+ (name utils)
+ (libraries unix yojson str))

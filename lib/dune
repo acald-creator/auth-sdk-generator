@@ -1,0 +1,3 @@
+(library
+ (name auth_sdk_generator)
+ (libraries ast parsers generators utils core unix))

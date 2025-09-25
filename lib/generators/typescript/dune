@@ -1,0 +1,4 @@
+(library
+ (name typescript_generator)
+ (libraries ast utils core unix)
+ (modules ts_generator))

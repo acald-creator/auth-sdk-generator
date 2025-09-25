@@ -1,0 +1,5 @@
+(library
+ (public_name auth-sdk-generator.python_generator)
+ (name python_generator)
+ (libraries core ast unix str)
+ (preprocess (pps ppx_deriving.show)))
