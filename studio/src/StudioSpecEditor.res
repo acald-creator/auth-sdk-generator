@@ -7,6 +7,8 @@ open Types
 let make = () => {
   let (spec, setSpec) = React.useState(() => emptySpec)
   let (selectedProvider, setSelectedProvider) = React.useState(() => "custom")
+  let (isGenerating, setIsGenerating) = React.useState(() => false)
+  let (generationStatus, setGenerationStatus) = React.useState(() => None)
 
   // Provider templates
   let providerTemplates = [
@@ -44,6 +46,35 @@ let make = () => {
     setSpec(_ => template)
   }
 
+  // Handle SDK generation
+  let generateSDK = (language) => {
+    setIsGenerating(_ => true)
+    setGenerationStatus(_ => Some(`Generating ${language} SDK...`))
+
+    try {
+      let outputDir = `./generated/${spec.name}-${language}-sdk`
+
+      switch language {
+      | "typescript" => AuthSDKGenerator.generateTypeScriptSDK(spec, outputDir)
+      | "python" => AuthSDKGenerator.generatePythonSDK(spec, outputDir)
+      | _ => ()
+      }
+
+      setGenerationStatus(_ => Some(`✅ ${language} SDK generated successfully!`))
+      Js.Global.setTimeout(() => setGenerationStatus(_ => None), 3000)->ignore
+    } catch {
+    | Js.Exn.Error(obj) =>
+        let message = Js.Exn.message(obj)->Option.getOr("Unknown error")
+        setGenerationStatus(_ => Some(`❌ Error: ${message}`))
+        Js.Global.setTimeout(() => setGenerationStatus(_ => None), 5000)->ignore
+    | _ =>
+        setGenerationStatus(_ => Some("❌ Error: Unknown error occurred"))
+        Js.Global.setTimeout(() => setGenerationStatus(_ => None), 5000)->ignore
+    }
+
+    setIsGenerating(_ => false)
+  }
+
   <div className="min-h-screen bg-gray-50">
     // Header
     <header className="bg-white shadow-sm border-b">
@@ -61,13 +92,35 @@ let make = () => {
             <button className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
               {"Preview"->React.string}
             </button>
-            <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              {"Generate SDK"->React.string}
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                disabled={isGenerating}
+                onClick={_ => generateSDK("typescript")}>
+                {(isGenerating ? "Generating..." : "Generate TypeScript")->React.string}
+              </button>
+              <button
+                className="px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                disabled={isGenerating}
+                onClick={_ => generateSDK("python")}>
+                {(isGenerating ? "Generating..." : "Generate Python")->React.string}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </header>
+
+    // Status Message
+    {switch generationStatus {
+    | Some(message) =>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <p className="text-sm text-blue-800">{message->React.string}</p>
+          </div>
+        </div>
+    | None => React.null
+    }}
 
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

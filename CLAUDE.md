@@ -9,12 +9,18 @@ This is an OCaml-based authentication SDK generator that creates type-safe SDKs 
 **Supported Languages:**
 - **TypeScript**: Complete OAuth2 client with strict type safety and comprehensive validation
 - **Python**: Modern async/await OAuth2 client with dataclasses and type hints
+- **ReScript** (Planned): Sound type system with functional programming paradigms and JavaScript interop
+
+**Planned Languages:**
+- **Go**: Struct-based OAuth client with goroutine support
+- **Java**: Enterprise-ready SDK with Spring integration
 
 **Key Features:**
 - In-memory code validation before file generation
 - Dynamic dependency version management with fallback strategies
 - Multi-language CLI with comprehensive error reporting
 - Production-ready SDK generation with full build/test integration
+- **ReScript Bridge** (Planned): Web-based management UI for visual spec creation and SDK generation
 
 ## Essential Commands
 
@@ -204,3 +210,30 @@ auth-sdk-generator/
 - **`lib/validators/`**: In-memory validation systems that ensure generated code is syntactically correct and OAuth2-compliant
 - **`specs/`**: Example `.auth` specification files showing how to configure OAuth2 providers
 - **`generated/`**: Temporary directory where SDKs are generated during development and testing
+- **`bridge/`** (Planned): ReScript bridge for web UI and enhanced CLI tooling
+
+## Planned ReScript Integration
+
+### ReScript as Target Language
+The generator will support ReScript as a target language, providing:
+- **Sound Type System**: Guaranteed type safety with no runtime type errors
+- **Functional Paradigms**: Pure functional programming with immutable data structures
+- **Fast Compilation**: Leveraging ReScript's OCaml-based compiler for quick builds
+- **JavaScript Interop**: Seamless integration with existing JavaScript/TypeScript codebases
+- **React Bindings**: First-class support for React applications
+
+### ReScript Bridge for Management
+A web-based management interface built with ReScript will provide:
+- **Visual Spec Editor**: Drag-and-drop OAuth configuration without writing `.auth` files
+- **Flow Visualization**: Real-time OAuth flow diagrams showing authorization paths
+- **Live SDK Preview**: Instant code generation preview in the browser
+- **Template Library**: Pre-configured specs for common providers (Google, GitHub, Auth0, Ory Hydra)
+- **Batch Generation**: Generate multiple SDKs across different languages simultaneously
+- **Version Management**: Track and manage specification versions
+
+### Why ReScript?
+- **Type Soundness**: Unlike TypeScript, ReScript's type system is sound - no `any` types or runtime surprises
+- **OCaml Heritage**: Natural fit with our OCaml core, sharing the same type system foundations
+- **Compilation Speed**: 10-100x faster compilation than TypeScript for large codebases
+- **Functional First**: Encourages immutable, predictable code patterns ideal for SDK generation
+- **Gradual Adoption**: Can be adopted incrementally alongside existing TypeScript/JavaScript code

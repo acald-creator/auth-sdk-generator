@@ -29,6 +29,8 @@
   sedlex
   ppx_deriving
   alcotest
-  ounit2)
+  ounit2
+  js_of_ocaml
+  js_of_ocaml-ppx)
  (tags
   ("oauth" "authentication" "sdk" "code-generation" "ocaml" "typescript")))

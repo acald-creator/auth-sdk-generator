@@ -1,0 +1,11 @@
+(executable
+ (name js_interface)
+ (libraries ast typescript_generator python_generator js_of_ocaml js_of_ocaml-ppx)
+ (modes byte)
+ (preprocess (pps js_of_ocaml-ppx)))
+
+(rule
+ (target js_interface.js)
+ (deps ./js_interface.bc)
+ (action
+  (run js_of_ocaml %{deps} -o %{target})))
