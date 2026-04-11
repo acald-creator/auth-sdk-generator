@@ -1,0 +1,131 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f5f5f5;
+  color: #1a1a2e;
+}
+
+.container {
+  max-width: 640px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.card.authenticated {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.card h2 {
+  color: #065f46;
+  margin-bottom: 16px;
+}
+
+.identity {
+  margin-bottom: 16px;
+}
+
+.field {
+  display: flex;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.field label {
+  font-weight: 600;
+  width: 120px;
+  flex-shrink: 0;
+  color: #374151;
+}
+
+.field span {
+  color: #1f2937;
+  word-break: break-all;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #1a1a2e;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn:hover {
+  background: #2d2d44;
+}
+
+.btn-logout {
+  background: #6b7280;
+}
+
+.btn-logout:hover {
+  background: #4b5563;
+}
+
+.loading {
+  color: #9ca3af;
+}
+
+.info {
+  margin-top: 32px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.info h3 {
+  margin-bottom: 12px;
+}
+
+.info ol {
+  padding-left: 20px;
+  color: #4b5563;
+  line-height: 1.8;
+}
+
+.info code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
