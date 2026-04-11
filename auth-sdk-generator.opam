@@ -21,6 +21,8 @@ depends: [
   "ppx_deriving"
   "alcotest"
   "ounit2"
+  "js_of_ocaml"
+  "js_of_ocaml-ppx"
   "odoc" {with-doc}
 ]
 build: [

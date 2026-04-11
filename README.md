@@ -1,6 +1,6 @@
 # Auth SDK Generator
 
-[![OCaml](https://img.shields.io/badge/OCaml-4.14+-orange.svg)](https://ocaml.org)
+[![OCaml](https://img.shields.io/badge/OCaml-5.1+-orange.svg)](https://ocaml.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Release](https://img.shields.io/github/v/release/acald-creator/auth-sdk-generator?include_prereleases)](https://github.com/acald-creator/auth-sdk-generator/releases)
 
@@ -19,7 +19,7 @@ An OCaml-based polyglot authentication SDK generator that creates type-safe OAut
 
 ### Prerequisites
 
-- OCaml 4.14+ and opam
+- [OCaml](https://ocaml.org/install) 5.1+ and [opam](https://opam.ocaml.org/doc/Install.html) 2.x
 - Dune 3.20+
 - Node.js 18+ (for TypeScript SDK testing)
 - Python 3.8+ (for Python SDK testing)
@@ -32,14 +32,26 @@ git clone https://github.com/acald-creator/auth-sdk-generator.git
 cd auth-sdk-generator
 ```
 
-2. Install OCaml dependencies:
+2. Set up an opam switch (if you don't already have one with OCaml 5.1+):
 ```bash
-opam install . --deps-only
+opam switch create . 5.4.1 --no-install
+eval $(opam env)
 ```
 
-3. Build the generator:
+3. Install OCaml dependencies:
+```bash
+opam update
+opam install . --deps-only -y
+```
+
+4. Build the generator:
 ```bash
 make build
+```
+
+5. Verify everything works:
+```bash
+make test
 ```
 
 ### Basic Usage
@@ -179,12 +191,19 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ### Development Setup
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`make test`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+2. Clone and install dependencies:
+   ```bash
+   git clone https://github.com/<you>/auth-sdk-generator.git
+   cd auth-sdk-generator
+   opam update && opam install . --deps-only -y
+   make build && make test
+   ```
+3. Create a feature branch (`git checkout -b feature/amazing-feature`)
+4. Make your changes
+5. Run tests (`make test`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
 ## Roadmap
 
