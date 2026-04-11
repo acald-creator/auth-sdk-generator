@@ -1,0 +1,10 @@
+# Keycloak OAuth 2.0 / OIDC specification
+# Endpoints use the realm path: /realms/{realm}/protocol/openid-connect/...
+name = "Keycloak"
+client_id = "my-client"
+client_secret = "my-secret"
+authorize_url = "http://localhost:8080/realms/demo/protocol/openid-connect/auth"
+token_url = "http://localhost:8080/realms/demo/protocol/openid-connect/token"
+introspect_url = "http://localhost:8080/realms/demo/protocol/openid-connect/token/introspect"
+revoke_url = "http://localhost:8080/realms/demo/protocol/openid-connect/revoke"
+scopes = "openid,profile,email"
