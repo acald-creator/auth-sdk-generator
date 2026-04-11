@@ -49,6 +49,8 @@ let parse_simple_dsl content =
   let token_url = get_value "token_url" "https://oauth2.googleapis.com/token" in
   let scopes = get_list "scopes" in
   let client_secret = List.assoc_opt "client_secret" key_values in
+  let introspect_url = List.assoc_opt "introspect_url" key_values in
+  let revoke_url = List.assoc_opt "revoke_url" key_values in
 
   if String.equal client_id "" then
     raise (Parse_error "client_id is required");
@@ -59,6 +61,8 @@ let parse_simple_dsl content =
     client_secret;
     authorize_url = auth_url;
     token_url;
+    introspect_url;
+    revoke_url;
     scopes;
     extra_params = [];
   } in

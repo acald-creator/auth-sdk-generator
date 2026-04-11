@@ -15,6 +15,8 @@ export interface AuthConfig {
   redirectUri: string;
   authorizeUrl?: string;
   tokenUrl?: string;
+  introspectUrl?: string;
+  revokeUrl?: string;
   scopes?: string[];
   extraParams?: Record<string, string>;
 }
@@ -38,11 +40,15 @@ export class OAuth2Client {
   private codeVerifier: string = '';
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
+  private readonly introspectUrl: string;
+  private readonly revokeUrl: string;
   private currentTokens: (TokenSet & { expires_at: number }) | null = null;
 
   // Default OAuth 2.0 endpoints (generated from spec)
   private static readonly DEFAULT_AUTHORIZE_URL = '%s';
   private static readonly DEFAULT_TOKEN_URL = '%s';
+  private static readonly DEFAULT_INTROSPECT_URL = '%s';
+  private static readonly DEFAULT_REVOKE_URL = '%s';
   private static readonly DEFAULT_SCOPES = %s;
 
   constructor(config: AuthConfig) {
@@ -52,6 +58,8 @@ export class OAuth2Client {
     };
     this.authorizeUrl = config.authorizeUrl ?? OAuth2Client.DEFAULT_AUTHORIZE_URL;
     this.tokenUrl = config.tokenUrl ?? OAuth2Client.DEFAULT_TOKEN_URL;
+    this.introspectUrl = config.introspectUrl ?? OAuth2Client.DEFAULT_INTROSPECT_URL;
+    this.revokeUrl = config.revokeUrl ?? OAuth2Client.DEFAULT_REVOKE_URL;
   }
 
   /**
@@ -176,6 +184,43 @@ export class OAuth2Client {
     return null;
   }
 
+  /**
+   * Introspect a token to check if it is active (RFC 7662)
+   */
+  async introspectToken(token: string): Promise<Record<string, unknown>> {
+    const body: Record<string, string> = { token };
+    if (this.config.clientId) body.client_id = this.config.clientId;
+    if (this.config.clientSecret) body.client_secret = this.config.clientSecret;
+
+    const response = await fetch(this.introspectUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: new URLSearchParams(body),
+    });
+
+    return await response.json() as Record<string, unknown>;
+  }
+
+  /**
+   * Revoke a token (RFC 7009)
+   */
+  async revokeToken(token: string): Promise<void> {
+    const body: Record<string, string> = { token };
+    if (this.config.clientId) body.client_id = this.config.clientId;
+    if (this.config.clientSecret) body.client_secret = this.config.clientSecret;
+
+    await fetch(this.revokeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(body),
+    });
+  }
+
   // PKCE Implementation (RFC 7636)
   private generateCodeVerifier(): string {
     const array = new Uint8Array(32);
@@ -235,6 +280,8 @@ export default OAuth2Client;
        now.tm_hour now.tm_min now.tm_sec)
     provider.authorize_url
     provider.token_url
+    (match provider.introspect_url with Some u -> u | None -> "")
+    (match provider.revoke_url with Some u -> u | None -> "")
     (let scopes_str = provider.scopes
                      |> List.map (fun s -> "\"" ^ s ^ "\"")
                      |> String.concat ", " in

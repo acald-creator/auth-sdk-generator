@@ -28,9 +28,36 @@ let stripe_provider = {
   client_secret = Some "sk_test_secret";
   authorize_url = "https://connect.stripe.com/oauth/authorize";
   token_url = "https://connect.stripe.com/oauth/token";
+  introspect_url = None;
+  revoke_url = None;
   scopes = ["read_write"];
   extra_params = [];
 }
+
+let ory_provider = {
+  name = "OryHydra";
+  client_id = "ory-client";
+  client_secret = Some "ory-secret";
+  authorize_url = "http://127.0.0.1:4444/oauth2/auth";
+  token_url = "http://127.0.0.1:4444/oauth2/token";
+  introspect_url = Some "http://127.0.0.1:4445/admin/oauth2/introspect";
+  revoke_url = Some "http://127.0.0.1:4444/oauth2/revoke";
+  scopes = ["openid"; "offline_access"; "profile"; "email"];
+  extra_params = [];
+}
+
+let ory_spec = create_oauth2_spec "Ory Hydra" [ory_provider]
+
+let ory_dsl = {|
+name = "Ory Hydra"
+client_id = "ory-client"
+client_secret = "ory-secret"
+authorize_url = "http://127.0.0.1:4444/oauth2/auth"
+token_url = "http://127.0.0.1:4444/oauth2/token"
+introspect_url = "http://127.0.0.1:4445/admin/oauth2/introspect"
+revoke_url = "http://127.0.0.1:4444/oauth2/revoke"
+scopes = "openid,offline_access,profile,email"
+|}
 
 let stripe_spec = create_oauth2_spec "Stripe Connect" [stripe_provider]
 

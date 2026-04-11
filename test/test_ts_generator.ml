@@ -100,6 +100,14 @@ let test_contains_expires_at () =
   check_contains ~msg:"expires_at tracking"
     (Lazy.force client_code) "expires_at"
 
+let test_contains_introspect_token () =
+  check_contains ~msg:"introspectToken method"
+    (Lazy.force client_code) "introspectToken"
+
+let test_contains_revoke_token () =
+  check_contains ~msg:"revokeToken method"
+    (Lazy.force client_code) "revokeToken"
+
 let tests = [
   Alcotest.test_case "generated code contains OAuth2Client class" `Quick test_contains_class;
   Alcotest.test_case "generated code contains provider URLs" `Quick test_contains_provider_urls;
@@ -118,4 +126,6 @@ let tests = [
   Alcotest.test_case "AuthConfig has runtime URL fields" `Quick test_contains_runtime_url_config;
   Alcotest.test_case "generated code has getAccessToken" `Quick test_contains_get_access_token;
   Alcotest.test_case "generated code tracks expires_at" `Quick test_contains_expires_at;
+  Alcotest.test_case "generated code has introspectToken" `Quick test_contains_introspect_token;
+  Alcotest.test_case "generated code has revokeToken" `Quick test_contains_revoke_token;
 ]

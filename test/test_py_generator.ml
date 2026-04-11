@@ -93,6 +93,14 @@ let test_contains_time_import () =
   check_contains ~msg:"import time"
     (Lazy.force client_code) "import time"
 
+let test_contains_introspect_token () =
+  check_contains ~msg:"introspect_token method"
+    (Lazy.force client_code) "introspect_token"
+
+let test_contains_revoke_token () =
+  check_contains ~msg:"revoke_token method"
+    (Lazy.force client_code) "revoke_token"
+
 let tests = [
   Alcotest.test_case "generated code contains OAuth2Client class" `Quick test_contains_class;
   Alcotest.test_case "generated code contains provider URLs" `Quick test_contains_provider_urls;
@@ -109,4 +117,6 @@ let tests = [
   Alcotest.test_case "AuthConfig has runtime URL fields" `Quick test_contains_runtime_url_config;
   Alcotest.test_case "generated code has get_access_token" `Quick test_contains_get_access_token;
   Alcotest.test_case "generated code imports time" `Quick test_contains_time_import;
+  Alcotest.test_case "generated code has introspect_token" `Quick test_contains_introspect_token;
+  Alcotest.test_case "generated code has revoke_token" `Quick test_contains_revoke_token;
 ]

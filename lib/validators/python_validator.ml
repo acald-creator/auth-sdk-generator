@@ -46,6 +46,8 @@ let validate_oauth2_structure code_string =
     ("Authorization URL building", "_build_auth_url");
     ("Token exchange", "exchange_code");
     ("Token auto-refresh", "get_access_token");
+    ("Token introspection", "introspect_token");
+    ("Token revocation", "revoke_token");
     ("Requests import", "import requests");
     ("Base64 import", "import base64");
     ("Hashlib import", "import hashlib");

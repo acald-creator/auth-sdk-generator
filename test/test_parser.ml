@@ -133,6 +133,20 @@ let test_parse_no_client_secret () =
   let p = List.hd spec.providers in
   Alcotest.(check (option string)) "no client_secret" None p.client_secret
 
+let test_parse_introspect_and_revoke_urls () =
+  let spec = Parsers.Simple_parser.parse_simple_dsl Test_helpers.ory_dsl in
+  let p = List.hd spec.providers in
+  Alcotest.(check (option string)) "introspect_url"
+    (Some "http://127.0.0.1:4445/admin/oauth2/introspect") p.introspect_url;
+  Alcotest.(check (option string)) "revoke_url"
+    (Some "http://127.0.0.1:4444/oauth2/revoke") p.revoke_url
+
+let test_parse_no_introspect_revoke () =
+  let spec = Parsers.Simple_parser.parse_simple_dsl Test_helpers.full_dsl in
+  let p = List.hd spec.providers in
+  Alcotest.(check (option string)) "no introspect_url" None p.introspect_url;
+  Alcotest.(check (option string)) "no revoke_url" None p.revoke_url
+
 let tests = [
   Alcotest.test_case "parse minimal input" `Quick test_parse_minimal_input;
   Alcotest.test_case "parse fully specified input" `Quick test_parse_fully_specified;
@@ -150,4 +164,6 @@ let tests = [
   Alcotest.test_case "parse_file reads specs/prototype.auth" `Quick test_parse_file;
   Alcotest.test_case "parse client_secret" `Quick test_parse_client_secret;
   Alcotest.test_case "parse no client_secret returns None" `Quick test_parse_no_client_secret;
+  Alcotest.test_case "parse introspect and revoke URLs" `Quick test_parse_introspect_and_revoke_urls;
+  Alcotest.test_case "parse no introspect/revoke returns None" `Quick test_parse_no_introspect_revoke;
 ]

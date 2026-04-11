@@ -46,6 +46,8 @@ let validate_oauth2_structure code_string =
     ("Authorization URL building", "buildAuthUrl");
     ("Token exchange", "exchangeCode");
     ("Token auto-refresh", "getAccessToken");
+    ("Token introspection", "introspectToken");
+    ("Token revocation", "revokeToken");
   ] in
 
   let missing_components = List.filter (fun (_, pattern) ->

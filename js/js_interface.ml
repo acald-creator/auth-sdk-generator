@@ -26,6 +26,8 @@ let auth_spec_of_js (js_spec : auth_spec_js Js.t) : Ast.Auth_types.auth_spec =
     client_secret = client_secret;
     authorize_url = authorize_url;
     token_url = token_url;
+    introspect_url = None;
+    revoke_url = None;
     scopes = scopes;
     extra_params = [];
   } in

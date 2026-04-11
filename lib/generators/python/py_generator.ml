@@ -30,6 +30,8 @@ class AuthConfig:
     client_secret: Optional[str] = None
     authorize_url: Optional[str] = None
     token_url: Optional[str] = None
+    introspect_url: Optional[str] = None
+    revoke_url: Optional[str] = None
     scopes: Optional[List[str]] = None
     extra_params: Optional[Dict[str, str]] = None
 
@@ -59,6 +61,8 @@ class OAuth2Client:
     # Default OAuth 2.0 endpoints (generated from spec)
     DEFAULT_AUTHORIZE_URL = "%s"
     DEFAULT_TOKEN_URL = "%s"
+    DEFAULT_INTROSPECT_URL = "%s"
+    DEFAULT_REVOKE_URL = "%s"
     DEFAULT_SCOPES = [%s]
 
     def __init__(self, config: AuthConfig):
@@ -69,6 +73,8 @@ class OAuth2Client:
         self._code_verifier = ""
         self._authorize_url = config.authorize_url or self.DEFAULT_AUTHORIZE_URL
         self._token_url = config.token_url or self.DEFAULT_TOKEN_URL
+        self._introspect_url = config.introspect_url or self.DEFAULT_INTROSPECT_URL
+        self._revoke_url = config.revoke_url or self.DEFAULT_REVOKE_URL
         self._current_tokens: Optional[TokenSet] = None
         self._expires_at: float = 0.0
 
@@ -196,6 +202,43 @@ class OAuth2Client:
         # Token expired, no refresh token available
         return None
 
+    async def introspect_token(self, token: str) -> dict:
+        """Introspect a token to check if it is active (RFC 7662)"""
+        body: Dict[str, str] = {"token": token}
+        if self.config.client_id:
+            body["client_id"] = self.config.client_id
+        if self.config.client_secret:
+            body["client_secret"] = self.config.client_secret
+
+        response = requests.post(
+            self._introspect_url,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+            },
+            data=body,
+            timeout=30
+        )
+
+        return response.json()
+
+    async def revoke_token(self, token: str) -> None:
+        """Revoke a token (RFC 7009)"""
+        body: Dict[str, str] = {"token": token}
+        if self.config.client_id:
+            body["client_id"] = self.config.client_id
+        if self.config.client_secret:
+            body["client_secret"] = self.config.client_secret
+
+        requests.post(
+            self._revoke_url,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            data=body,
+            timeout=30
+        )
+
     # PKCE Implementation (RFC 7636)
     def _generate_code_verifier(self) -> str:
         """Generate PKCE code verifier"""
@@ -238,6 +281,8 @@ class OAuth2Client:
        now.tm_hour now.tm_min now.tm_sec)
     provider.authorize_url
     provider.token_url
+    (match provider.introspect_url with Some u -> u | None -> "")
+    (match provider.revoke_url with Some u -> u | None -> "")
     (String.concat ", " (List.map (fun s -> sprintf "\"%s\"" s) provider.scopes))
 
 (** Generate Python package setup file *)

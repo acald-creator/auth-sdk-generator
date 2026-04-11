@@ -1,0 +1,9 @@
+# Ory Hydra OAuth 2.0 / OIDC specification
+name = "Ory Hydra"
+client_id = "my-client"
+client_secret = "my-secret"
+authorize_url = "http://127.0.0.1:4444/oauth2/auth"
+token_url = "http://127.0.0.1:4444/oauth2/token"
+introspect_url = "http://127.0.0.1:4445/admin/oauth2/introspect"
+revoke_url = "http://127.0.0.1:4444/oauth2/revoke"
+scopes = "openid,offline_access,profile,email"

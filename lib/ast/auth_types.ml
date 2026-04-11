@@ -29,6 +29,8 @@ and provider = {
   client_secret: string option;
   authorize_url: string;
   token_url: string;
+  introspect_url: string option;
+  revoke_url: string option;
   scopes: string list;
   extra_params: (string * string) list;
 }
@@ -49,6 +51,8 @@ let create_provider name client_id auth_url token_url scopes =
     client_secret = None;
     authorize_url = auth_url;
     token_url = token_url;
+    introspect_url = None;
+    revoke_url = None;
     scopes;
     extra_params = [];
   }
