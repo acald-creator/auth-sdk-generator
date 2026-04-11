@@ -1,2 +1,22 @@
 (test
- (name test_auth_sdk_generator))
+ (name test_auth_sdk_generator)
+ (modules
+   test_auth_sdk_generator
+   test_helpers
+   test_ast
+   test_parser
+   test_version_fetcher
+   test_ts_generator
+   test_py_generator
+   test_validators)
+ (libraries
+   alcotest
+   ast
+   parsers
+   utils
+   typescript_generator
+   python_generator
+   validators
+   unix
+   str
+   yojson))
