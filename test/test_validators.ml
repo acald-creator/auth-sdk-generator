@@ -65,6 +65,18 @@ let test_py_syntax_valid () =
     | Ok () -> Alcotest.(check pass) "python3 passed" () ()
     | Error msg -> Alcotest.fail msg
 
+let test_ts_structure_requires_get_access_token () =
+  match Validators.Typescript_validator.validate_oauth2_structure "" with
+  | Ok () -> Alcotest.fail "expected Error"
+  | Error msg ->
+    check_contains ~msg:"lists getAccessToken" msg "Token auto-refresh"
+
+let test_py_structure_requires_get_access_token () =
+  match Validators.Python_validator.validate_oauth2_structure "" with
+  | Ok () -> Alcotest.fail "expected Error"
+  | Error msg ->
+    check_contains ~msg:"lists get_access_token" msg "Token auto-refresh"
+
 let tests = [
   Alcotest.test_case "TS structure: valid code passes" `Quick test_ts_structure_valid;
   Alcotest.test_case "TS structure: empty string fails" `Quick test_ts_structure_empty_fails;
@@ -74,4 +86,6 @@ let tests = [
   Alcotest.test_case "PY structure: partial code fails" `Quick test_py_structure_partial_fails;
   Alcotest.test_case "TS syntax: generated code compiles" `Slow test_ts_syntax_valid;
   Alcotest.test_case "PY syntax: generated code compiles" `Slow test_py_syntax_valid;
+  Alcotest.test_case "TS structure: requires getAccessToken" `Quick test_ts_structure_requires_get_access_token;
+  Alcotest.test_case "PY structure: requires get_access_token" `Quick test_py_structure_requires_get_access_token;
 ]

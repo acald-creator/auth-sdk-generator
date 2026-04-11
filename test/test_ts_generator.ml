@@ -83,6 +83,23 @@ let test_sdk_index_contains_class () =
     check_contains ~msg:"class in index.ts" content "class OAuth2Client"
   )
 
+let test_contains_client_secret_config () =
+  check_contains ~msg:"clientSecret in AuthConfig"
+    (Lazy.force client_code) "clientSecret?: string"
+
+let test_contains_runtime_url_config () =
+  let code = Lazy.force client_code in
+  check_contains ~msg:"authorizeUrl in AuthConfig" code "authorizeUrl?: string";
+  check_contains ~msg:"tokenUrl in AuthConfig" code "tokenUrl?: string"
+
+let test_contains_get_access_token () =
+  check_contains ~msg:"getAccessToken method"
+    (Lazy.force client_code) "getAccessToken"
+
+let test_contains_expires_at () =
+  check_contains ~msg:"expires_at tracking"
+    (Lazy.force client_code) "expires_at"
+
 let tests = [
   Alcotest.test_case "generated code contains OAuth2Client class" `Quick test_contains_class;
   Alcotest.test_case "generated code contains provider URLs" `Quick test_contains_provider_urls;
@@ -97,4 +114,8 @@ let tests = [
   Alcotest.test_case "tsconfig has strict mode" `Quick test_tsconfig_strict;
   Alcotest.test_case "SDK generation creates expected files" `Quick test_sdk_creates_files;
   Alcotest.test_case "SDK index.ts contains OAuth2Client" `Quick test_sdk_index_contains_class;
+  Alcotest.test_case "AuthConfig has clientSecret field" `Quick test_contains_client_secret_config;
+  Alcotest.test_case "AuthConfig has runtime URL fields" `Quick test_contains_runtime_url_config;
+  Alcotest.test_case "generated code has getAccessToken" `Quick test_contains_get_access_token;
+  Alcotest.test_case "generated code tracks expires_at" `Quick test_contains_expires_at;
 ]

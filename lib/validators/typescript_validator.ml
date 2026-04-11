@@ -45,6 +45,7 @@ let validate_oauth2_structure code_string =
     ("PKCE code challenge", "generateCodeChallenge");
     ("Authorization URL building", "buildAuthUrl");
     ("Token exchange", "exchangeCode");
+    ("Token auto-refresh", "getAccessToken");
   ] in
 
   let missing_components = List.filter (fun (_, pattern) ->

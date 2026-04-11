@@ -48,11 +48,20 @@ let parse_simple_dsl content =
   let auth_url = get_value "authorize_url" "https://accounts.google.com/o/oauth2/v2/auth" in
   let token_url = get_value "token_url" "https://oauth2.googleapis.com/token" in
   let scopes = get_list "scopes" in
+  let client_secret = List.assoc_opt "client_secret" key_values in
 
   if String.equal client_id "" then
     raise (Parse_error "client_id is required");
 
-  let provider = create_provider "default" client_id auth_url token_url scopes in
+  let provider = {
+    Ast.Auth_types.name = "default";
+    client_id;
+    client_secret;
+    authorize_url = auth_url;
+    token_url;
+    scopes;
+    extra_params = [];
+  } in
   create_oauth2_spec name [provider]
 
 (** Parse from file *)

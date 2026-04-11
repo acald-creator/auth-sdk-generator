@@ -11,7 +11,10 @@ let generate_oauth2_client (spec : auth_spec) (provider : provider) =
 
 export interface AuthConfig {
   clientId: string;
+  clientSecret?: string;
   redirectUri: string;
+  authorizeUrl?: string;
+  tokenUrl?: string;
   scopes?: string[];
   extraParams?: Record<string, string>;
 }
@@ -33,10 +36,13 @@ export interface AuthError extends Error {
 export class OAuth2Client {
   private config: AuthConfig;
   private codeVerifier: string = '';
+  private readonly authorizeUrl: string;
+  private readonly tokenUrl: string;
+  private currentTokens: (TokenSet & { expires_at: number }) | null = null;
 
-  // OAuth 2.0 endpoints (generated from spec)
-  private static readonly AUTHORIZE_URL = '%s';
-  private static readonly TOKEN_URL = '%s';
+  // Default OAuth 2.0 endpoints (generated from spec)
+  private static readonly DEFAULT_AUTHORIZE_URL = '%s';
+  private static readonly DEFAULT_TOKEN_URL = '%s';
   private static readonly DEFAULT_SCOPES = %s;
 
   constructor(config: AuthConfig) {
@@ -44,6 +50,8 @@ export class OAuth2Client {
       scopes: OAuth2Client.DEFAULT_SCOPES,
       ...config
     };
+    this.authorizeUrl = config.authorizeUrl ?? OAuth2Client.DEFAULT_AUTHORIZE_URL;
+    this.tokenUrl = config.tokenUrl ?? OAuth2Client.DEFAULT_TOKEN_URL;
   }
 
   /**
@@ -64,7 +72,7 @@ export class OAuth2Client {
    * Exchange authorization code for tokens
    */
   async exchangeCode(code: string, state?: string): Promise<TokenSet> {
-    const tokenRequest = {
+    const tokenRequest: Record<string, string> = {
       grant_type: 'authorization_code',
       client_id: this.config.clientId,
       code: code,
@@ -72,39 +80,11 @@ export class OAuth2Client {
       code_verifier: this.codeVerifier,
     };
 
-    const response = await fetch(OAuth2Client.TOKEN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: new URLSearchParams(tokenRequest as any),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw this.createAuthError(
-        error.error || 'token_exchange_failed',
-        error.error_description || `HTTP ${response.status}`,
-        error.error_uri
-      );
+    if (this.config.clientSecret) {
+      tokenRequest.client_secret = this.config.clientSecret;
     }
 
-    const tokens: TokenSet = await response.json();
-    return tokens;
-  }
-
-  /**
-   * Refresh access token
-   */
-  async refreshToken(refreshToken: string): Promise<TokenSet> {
-    const tokenRequest = {
-      grant_type: 'refresh_token',
-      client_id: this.config.clientId,
-      refresh_token: refreshToken,
-    };
-
-    const response = await fetch(OAuth2Client.TOKEN_URL, {
+    const response = await fetch(this.tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -114,7 +94,47 @@ export class OAuth2Client {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = await response.json().catch(() => ({})) as Record<string, string>;
+      throw this.createAuthError(
+        error.error || 'token_exchange_failed',
+        error.error_description || `HTTP ${response.status}`,
+        error.error_uri
+      );
+    }
+
+    const tokens: TokenSet = await response.json() as TokenSet;
+    this.currentTokens = {
+      ...tokens,
+      expires_at: Date.now() + tokens.expires_in * 1000,
+    };
+    return tokens;
+  }
+
+  /**
+   * Refresh access token
+   */
+  async refreshToken(refreshToken: string): Promise<TokenSet> {
+    const tokenRequest: Record<string, string> = {
+      grant_type: 'refresh_token',
+      client_id: this.config.clientId,
+      refresh_token: refreshToken,
+    };
+
+    if (this.config.clientSecret) {
+      tokenRequest.client_secret = this.config.clientSecret;
+    }
+
+    const response = await fetch(this.tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: new URLSearchParams(tokenRequest),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({})) as Record<string, string>;
       throw this.createAuthError(
         error.error || 'refresh_failed',
         error.error_description || `HTTP ${response.status}`,
@@ -122,7 +142,38 @@ export class OAuth2Client {
       );
     }
 
-    return await response.json();
+    const tokens: TokenSet = await response.json() as TokenSet;
+    this.currentTokens = {
+      ...tokens,
+      expires_at: Date.now() + tokens.expires_in * 1000,
+    };
+    return tokens;
+  }
+
+  /**
+   * Get a valid access token, refreshing automatically if expired.
+   * Returns null if no tokens are stored and no refresh is possible.
+   */
+  async getAccessToken(): Promise<string | null> {
+    if (!this.currentTokens) {
+      return null;
+    }
+
+    // Check if token is expired (with 60-second buffer)
+    const isExpired = Date.now() >= this.currentTokens.expires_at - 60_000;
+
+    if (!isExpired) {
+      return this.currentTokens.access_token;
+    }
+
+    // Try to refresh
+    if (this.currentTokens.refresh_token) {
+      const refreshed = await this.refreshToken(this.currentTokens.refresh_token);
+      return refreshed.access_token;
+    }
+
+    // Token expired, no refresh token available
+    return null;
   }
 
   // PKCE Implementation (RFC 7636)
@@ -157,7 +208,7 @@ export class OAuth2Client {
       ...this.config.extraParams,
     });
 
-    return `${OAuth2Client.AUTHORIZE_URL}?${params.toString()}`;
+    return `${this.authorizeUrl}?${params.toString()}`;
   }
 
   private createAuthError(code: string, description?: string, uri?: string): AuthError {

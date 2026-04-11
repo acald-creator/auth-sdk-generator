@@ -76,6 +76,23 @@ let test_requirements_contains_requests () =
   let req = Python_generator.Py_generator.generate_requirements () in
   check_contains ~msg:"requests" req "requests>=2.31.0"
 
+let test_contains_client_secret_config () =
+  check_contains ~msg:"client_secret in AuthConfig"
+    (Lazy.force client_code) "client_secret: Optional[str]"
+
+let test_contains_runtime_url_config () =
+  let code = Lazy.force client_code in
+  check_contains ~msg:"authorize_url in AuthConfig" code "authorize_url: Optional[str]";
+  check_contains ~msg:"token_url in AuthConfig" code "token_url: Optional[str]"
+
+let test_contains_get_access_token () =
+  check_contains ~msg:"get_access_token method"
+    (Lazy.force client_code) "get_access_token"
+
+let test_contains_time_import () =
+  check_contains ~msg:"import time"
+    (Lazy.force client_code) "import time"
+
 let tests = [
   Alcotest.test_case "generated code contains OAuth2Client class" `Quick test_contains_class;
   Alcotest.test_case "generated code contains provider URLs" `Quick test_contains_provider_urls;
@@ -88,4 +105,8 @@ let tests = [
   Alcotest.test_case "SDK generation creates expected files" `Quick test_sdk_creates_files;
   Alcotest.test_case "setup.py contains provider name" `Quick test_setup_py_contains_name;
   Alcotest.test_case "requirements.txt contains requests" `Quick test_requirements_contains_requests;
+  Alcotest.test_case "AuthConfig has client_secret field" `Quick test_contains_client_secret_config;
+  Alcotest.test_case "AuthConfig has runtime URL fields" `Quick test_contains_runtime_url_config;
+  Alcotest.test_case "generated code has get_access_token" `Quick test_contains_get_access_token;
+  Alcotest.test_case "generated code imports time" `Quick test_contains_time_import;
 ]

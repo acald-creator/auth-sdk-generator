@@ -22,6 +22,27 @@ let github_provider =
 
 let github_spec = create_oauth2_spec "GitHub Integration" [github_provider]
 
+let stripe_provider = {
+  name = "StripeConnect";
+  client_id = "ca_test123";
+  client_secret = Some "sk_test_secret";
+  authorize_url = "https://connect.stripe.com/oauth/authorize";
+  token_url = "https://connect.stripe.com/oauth/token";
+  scopes = ["read_write"];
+  extra_params = [];
+}
+
+let stripe_spec = create_oauth2_spec "Stripe Connect" [stripe_provider]
+
+let stripe_dsl = {|
+name = "Stripe Connect"
+client_id = "ca_test123"
+client_secret = "sk_test_secret"
+authorize_url = "https://connect.stripe.com/oauth/authorize"
+token_url = "https://connect.stripe.com/oauth/token"
+scopes = "read_write"
+|}
+
 let minimal_dsl = {|
 client_id = "test-client-123"
 |}

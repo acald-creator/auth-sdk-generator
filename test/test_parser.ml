@@ -123,6 +123,16 @@ let test_parse_file () =
     Alcotest.(check (list string)) "scopes" ["read"; "write"] p.scopes
   )
 
+let test_parse_client_secret () =
+  let spec = Parsers.Simple_parser.parse_simple_dsl Test_helpers.stripe_dsl in
+  let p = List.hd spec.providers in
+  Alcotest.(check (option string)) "client_secret" (Some "sk_test_secret") p.client_secret
+
+let test_parse_no_client_secret () =
+  let spec = Parsers.Simple_parser.parse_simple_dsl Test_helpers.full_dsl in
+  let p = List.hd spec.providers in
+  Alcotest.(check (option string)) "no client_secret" None p.client_secret
+
 let tests = [
   Alcotest.test_case "parse minimal input" `Quick test_parse_minimal_input;
   Alcotest.test_case "parse fully specified input" `Quick test_parse_fully_specified;
@@ -138,4 +148,6 @@ let tests = [
   Alcotest.test_case "parse duplicate keys last wins" `Quick test_parse_duplicate_keys_last_wins;
   Alcotest.test_case "parse always produces AuthCode+PKCE" `Quick test_parse_always_produces_authcode_pkce;
   Alcotest.test_case "parse_file reads specs/prototype.auth" `Quick test_parse_file;
+  Alcotest.test_case "parse client_secret" `Quick test_parse_client_secret;
+  Alcotest.test_case "parse no client_secret returns None" `Quick test_parse_no_client_secret;
 ]

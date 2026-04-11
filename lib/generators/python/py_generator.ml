@@ -15,6 +15,7 @@ import base64
 import hashlib
 import json
 import secrets
+import time
 import urllib.parse
 from typing import Dict, List, Optional, Union
 from dataclasses import dataclass
@@ -26,6 +27,9 @@ class AuthConfig:
     """Configuration for OAuth2 authentication"""
     client_id: str
     redirect_uri: str
+    client_secret: Optional[str] = None
+    authorize_url: Optional[str] = None
+    token_url: Optional[str] = None
     scopes: Optional[List[str]] = None
     extra_params: Optional[Dict[str, str]] = None
 
@@ -52,9 +56,9 @@ class AuthError(Exception):
 class OAuth2Client:
     """OAuth 2.0 client with PKCE support"""
 
-    # OAuth 2.0 endpoints (generated from spec)
-    AUTHORIZE_URL = "%s"
-    TOKEN_URL = "%s"
+    # Default OAuth 2.0 endpoints (generated from spec)
+    DEFAULT_AUTHORIZE_URL = "%s"
+    DEFAULT_TOKEN_URL = "%s"
     DEFAULT_SCOPES = [%s]
 
     def __init__(self, config: AuthConfig):
@@ -63,6 +67,10 @@ class OAuth2Client:
         if self.config.scopes is None:
             self.config.scopes = self.DEFAULT_SCOPES.copy()
         self._code_verifier = ""
+        self._authorize_url = config.authorize_url or self.DEFAULT_AUTHORIZE_URL
+        self._token_url = config.token_url or self.DEFAULT_TOKEN_URL
+        self._current_tokens: Optional[TokenSet] = None
+        self._expires_at: float = 0.0
 
     async def start_auth(self) -> str:
         """Start OAuth 2.0 authorization code flow with PKCE"""
@@ -76,7 +84,7 @@ class OAuth2Client:
 
     async def exchange_code(self, code: str, state: Optional[str] = None) -> TokenSet:
         """Exchange authorization code for tokens"""
-        token_request = {
+        token_request: Dict[str, str] = {
             "grant_type": "authorization_code",
             "client_id": self.config.client_id,
             "code": code,
@@ -84,8 +92,11 @@ class OAuth2Client:
             "code_verifier": self._code_verifier,
         }
 
+        if self.config.client_secret:
+            token_request["client_secret"] = self.config.client_secret
+
         response = requests.post(
-            self.TOKEN_URL,
+            self._token_url,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json",
@@ -108,24 +119,30 @@ class OAuth2Client:
             )
 
         token_data = response.json()
-        return TokenSet(
+        token_set = TokenSet(
             access_token=token_data["access_token"],
             expires_in=token_data["expires_in"],
             token_type=token_data["token_type"],
             refresh_token=token_data.get("refresh_token"),
             scope=token_data.get("scope")
         )
+        self._current_tokens = token_set
+        self._expires_at = time.time() + token_set.expires_in
+        return token_set
 
     async def refresh_token(self, refresh_token: str) -> TokenSet:
         """Refresh access token"""
-        token_request = {
+        token_request: Dict[str, str] = {
             "grant_type": "refresh_token",
             "client_id": self.config.client_id,
             "refresh_token": refresh_token,
         }
 
+        if self.config.client_secret:
+            token_request["client_secret"] = self.config.client_secret
+
         response = requests.post(
-            self.TOKEN_URL,
+            self._token_url,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json",
@@ -148,13 +165,36 @@ class OAuth2Client:
             )
 
         token_data = response.json()
-        return TokenSet(
+        token_set = TokenSet(
             access_token=token_data["access_token"],
             expires_in=token_data["expires_in"],
             token_type=token_data["token_type"],
             refresh_token=token_data.get("refresh_token"),
             scope=token_data.get("scope")
         )
+        self._current_tokens = token_set
+        self._expires_at = time.time() + token_set.expires_in
+        return token_set
+
+    async def get_access_token(self) -> Optional[str]:
+        """Get a valid access token, refreshing automatically if expired.
+        Returns None if no tokens are stored and no refresh is possible."""
+        if self._current_tokens is None:
+            return None
+
+        # Check if token is expired (with 60-second buffer)
+        is_expired = time.time() >= self._expires_at - 60
+
+        if not is_expired:
+            return self._current_tokens.access_token
+
+        # Try to refresh
+        if self._current_tokens.refresh_token:
+            refreshed = await self.refresh_token(self._current_tokens.refresh_token)
+            return refreshed.access_token
+
+        # Token expired, no refresh token available
+        return None
 
     # PKCE Implementation (RFC 7636)
     def _generate_code_verifier(self) -> str:
@@ -188,7 +228,7 @@ class OAuth2Client:
         if self.config.extra_params:
             params.update(self.config.extra_params)
 
-        return f"{self.AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
+        return f"{self._authorize_url}?{urllib.parse.urlencode(params)}"
 |}
     spec.name
     provider.name
