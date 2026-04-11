@@ -25,8 +25,6 @@
   dune
   core
   yojson
-  menhir
-  sedlex
   ppx_deriving
   alcotest
   ounit2
