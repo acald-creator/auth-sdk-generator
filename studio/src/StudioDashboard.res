@@ -2,7 +2,7 @@
 // Main landing page for the studio interface
 
 @react.component
-let make = () => {
+let make = (~goToSpecEditor, ~goToTemplates) => {
   <div className="min-h-screen bg-gray-50">
     // Header
     <header className="bg-white shadow-sm border-b">
@@ -47,13 +47,13 @@ let make = () => {
           description="Start from scratch or use a template"
           icon="✨"
           primary=true
-          onClick={() => Js.log("Navigate to spec editor")}
+          onClick={_ => goToSpecEditor()}
         />
         <QuickActionCard
           title="Browse Templates"
           description="Google, GitHub, Auth0, Ory Hydra"
           icon="📚"
-          onClick={() => Js.log("Navigate to templates")}
+          onClick={_ => goToTemplates()}
         />
         <QuickActionCard
           title="Import Existing"

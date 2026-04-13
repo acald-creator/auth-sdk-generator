@@ -11,6 +11,7 @@ import * as JsxRuntime from "react/jsx-runtime";
 import * as Caml_js_exceptions from "rescript/lib/es6/caml_js_exceptions.js";
 
 function StudioSpecEditor(props) {
+  var goBack = props.goBack;
   var match = React.useState(function () {
         return Types.emptySpec;
       });
@@ -192,7 +193,10 @@ function StudioSpecEditor(props) {
                                           children: [
                                             JsxRuntime.jsx("button", {
                                                   children: "← Back",
-                                                  className: "text-gray-500 hover:text-gray-700 mr-4"
+                                                  className: "text-gray-500 hover:text-gray-700 mr-4",
+                                                  onClick: (function (param) {
+                                                      goBack();
+                                                    })
                                                 }),
                                             JsxRuntime.jsx("h1", {
                                                   children: "OAuth Spec Editor",

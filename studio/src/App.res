@@ -14,8 +14,8 @@ let make = () => {
 
   // Render current view
   switch currentView {
-  | Dashboard => <StudioDashboard />
-  | SpecEditor => <StudioSpecEditor />
+  | Dashboard => <StudioDashboard goToSpecEditor goToTemplates />
+  | SpecEditor => <StudioSpecEditor goBack=goToDashboard />
   | Templates => <TemplatesView goBack=goToDashboard />
   }
 }

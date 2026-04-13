@@ -4,6 +4,8 @@ import * as QuickActionCard from "./Components/QuickActionCard.res.mjs";
 import * as JsxRuntime from "react/jsx-runtime";
 
 function StudioDashboard(props) {
+  var goToTemplates = props.goToTemplates;
+  var goToSpecEditor = props.goToSpecEditor;
   return JsxRuntime.jsxs("div", {
               children: [
                 JsxRuntime.jsx("header", {
@@ -66,7 +68,7 @@ function StudioDashboard(props) {
                                       icon: "✨",
                                       primary: true,
                                       onClick: (function () {
-                                          console.log("Navigate to spec editor");
+                                          goToSpecEditor();
                                         })
                                     }),
                                 JsxRuntime.jsx(QuickActionCard.make, {
@@ -74,7 +76,7 @@ function StudioDashboard(props) {
                                       description: "Google, GitHub, Auth0, Ory Hydra",
                                       icon: "📚",
                                       onClick: (function () {
-                                          console.log("Navigate to templates");
+                                          goToTemplates();
                                         })
                                     }),
                                 JsxRuntime.jsx(QuickActionCard.make, {

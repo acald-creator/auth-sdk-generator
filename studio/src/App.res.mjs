@@ -16,11 +16,26 @@ function App(props) {
           return "Dashboard";
         });
   };
+  var goToSpecEditor = function () {
+    setCurrentView(function (param) {
+          return "SpecEditor";
+        });
+  };
+  var goToTemplates = function () {
+    setCurrentView(function (param) {
+          return "Templates";
+        });
+  };
   switch (match[0]) {
     case "Dashboard" :
-        return JsxRuntime.jsx(StudioDashboard.make, {});
+        return JsxRuntime.jsx(StudioDashboard.make, {
+                    goToSpecEditor: goToSpecEditor,
+                    goToTemplates: goToTemplates
+                  });
     case "SpecEditor" :
-        return JsxRuntime.jsx(StudioSpecEditor.make, {});
+        return JsxRuntime.jsx(StudioSpecEditor.make, {
+                    goBack: goToDashboard
+                  });
     case "Templates" :
         return JsxRuntime.jsx(TemplatesView.make, {
                     goBack: goToDashboard
