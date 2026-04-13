@@ -1,0 +1,5 @@
+name = "Login.gov Sandbox"
+client_id = "your-logingov-client-id"
+authorize_url = "https://idp.int.identitysandbox.gov/openid_connect/authorize"
+token_url = "https://idp.int.identitysandbox.gov/api/openid_connect/token"
+scopes = "openid email"

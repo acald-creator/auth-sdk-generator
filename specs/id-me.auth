@@ -1,0 +1,5 @@
+name = "ID.me Sandbox"
+client_id = "your-idme-client-id"
+authorize_url = "https://api.idmelabs.com/oauth/authorize"
+token_url = "https://api.idmelabs.com/oauth/token"
+scopes = "openid"
