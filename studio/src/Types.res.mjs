@@ -9,6 +9,8 @@ var emptySpec = {
   clientSecret: undefined,
   authorizeUrl: "",
   tokenUrl: "",
+  introspectUrl: undefined,
+  revokeUrl: undefined,
   redirectUri: "http://localhost:3000/callback",
   scopes: emptySpec_scopes
 };

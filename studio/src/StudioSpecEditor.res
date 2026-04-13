@@ -27,6 +27,20 @@ let make = () => {
       tokenUrl: "https://github.com/login/oauth/access_token",
       scopes: ["read:user", "user:email"],
     }),
+    ("login-gov", "Login.gov Sandbox", {
+      ...emptySpec,
+      name: "Login.gov Sandbox",
+      authorizeUrl: "https://idp.int.identitysandbox.gov/openid_connect/authorize",
+      tokenUrl: "https://idp.int.identitysandbox.gov/api/openid_connect/token",
+      scopes: ["openid", "email"],
+    }),
+    ("id-me", "ID.me Sandbox", {
+      ...emptySpec,
+      name: "ID.me Sandbox",
+      authorizeUrl: "https://api.idmelabs.com/oauth/authorize",
+      tokenUrl: "https://api.idmelabs.com/oauth/token",
+      scopes: ["openid"],
+    }),
     ("ory-hydra", "Ory Hydra", {
       ...emptySpec,
       name: "Ory Hydra OAuth",
@@ -180,6 +194,20 @@ let make = () => {
               value={spec.tokenUrl}
               onChange={value => setSpec(s => {...s, tokenUrl: value})}
               placeholder="https://provider.com/oauth2/token"
+            />
+
+            <FormField
+              label="Introspect URL (Optional)"
+              value={spec.introspectUrl->Option.getOr("")}
+              onChange={value => setSpec(s => {...s, introspectUrl: value === "" ? None : Some(value)})}
+              placeholder="https://provider.com/oauth2/introspect"
+            />
+
+            <FormField
+              label="Revoke URL (Optional)"
+              value={spec.revokeUrl->Option.getOr("")}
+              onChange={value => setSpec(s => {...s, revokeUrl: value === "" ? None : Some(value)})}
+              placeholder="https://provider.com/oauth2/revoke"
             />
 
             <FormField

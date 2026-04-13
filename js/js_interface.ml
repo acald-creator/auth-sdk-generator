@@ -7,6 +7,8 @@ class type auth_spec_js = object
   method clientSecret : Js.js_string Js.t Js.opt Js.readonly_prop
   method authorizeUrl : Js.js_string Js.t Js.readonly_prop
   method tokenUrl : Js.js_string Js.t Js.readonly_prop
+  method introspectUrl : Js.js_string Js.t Js.opt Js.readonly_prop
+  method revokeUrl : Js.js_string Js.t Js.opt Js.readonly_prop
   method redirectUri : Js.js_string Js.t Js.readonly_prop
   method scopes : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
 end
@@ -18,6 +20,8 @@ let auth_spec_of_js (js_spec : auth_spec_js Js.t) : Ast.Auth_types.auth_spec =
   let client_secret = Js.Opt.case js_spec##.clientSecret (fun () -> None) (fun s -> Some (Js.to_string s)) in
   let authorize_url = Js.to_string js_spec##.authorizeUrl in
   let token_url = Js.to_string js_spec##.tokenUrl in
+  let introspect_url = Js.Opt.case js_spec##.introspectUrl (fun () -> None) (fun s -> Some (Js.to_string s)) in
+  let revoke_url = Js.Opt.case js_spec##.revokeUrl (fun () -> None) (fun s -> Some (Js.to_string s)) in
   let scopes = js_spec##.scopes |> Js.to_array |> Array.to_list |> List.map Js.to_string in
 
   let provider = {
@@ -26,8 +30,8 @@ let auth_spec_of_js (js_spec : auth_spec_js Js.t) : Ast.Auth_types.auth_spec =
     client_secret = client_secret;
     authorize_url = authorize_url;
     token_url = token_url;
-    introspect_url = None;
-    revoke_url = None;
+    introspect_url = introspect_url;
+    revoke_url = revoke_url;
     scopes = scopes;
     extra_params = [];
   } in

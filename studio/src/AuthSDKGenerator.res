@@ -7,6 +7,8 @@ type authSpec = {
   clientSecret: option<string>,
   authorizeUrl: string,
   tokenUrl: string,
+  introspectUrl: option<string>,
+  revokeUrl: option<string>,
   redirectUri: string,
   scopes: array<string>,
 }
@@ -18,7 +20,7 @@ external generateTypeScript: (authSpec, string) => unit = "generateTypeScript"
 @val @scope("globalThis.AuthSDKGenerator")
 external generatePython: (authSpec, string) => unit = "generatePython"
 
-// Helper function to convert ReScript authSpec to match Types.authSpec
+// Helper function to convert ReScript authSpec to match OCaml interface
 let convertToAuthSpec = (spec: Types.authSpec): authSpec => {
   {
     name: spec.name,
@@ -26,6 +28,8 @@ let convertToAuthSpec = (spec: Types.authSpec): authSpec => {
     clientSecret: spec.clientSecret,
     authorizeUrl: spec.authorizeUrl,
     tokenUrl: spec.tokenUrl,
+    introspectUrl: spec.introspectUrl,
+    revokeUrl: spec.revokeUrl,
     redirectUri: spec.redirectUri,
     scopes: spec.scopes,
   }

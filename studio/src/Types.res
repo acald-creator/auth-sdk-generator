@@ -7,6 +7,8 @@ type authSpec = {
   clientSecret: option<string>,
   authorizeUrl: string,
   tokenUrl: string,
+  introspectUrl: option<string>,
+  revokeUrl: option<string>,
   redirectUri: string,
   scopes: array<string>,
 }
@@ -18,6 +20,8 @@ let emptySpec = {
   clientSecret: None,
   authorizeUrl: "",
   tokenUrl: "",
+  introspectUrl: None,
+  revokeUrl: None,
   redirectUri: "http://localhost:3000/callback",
   scopes: [],
 }

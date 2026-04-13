@@ -2,10 +2,13 @@
 
 import * as Types from "./Types.res.mjs";
 import * as React from "react";
+import * as Js_exn from "rescript/lib/es6/js_exn.js";
 import * as FormField from "./Components/FormField.res.mjs";
 import * as Core__Option from "@rescript/core/src/Core__Option.res.mjs";
 import * as AuthSpecPreview from "./Components/AuthSpecPreview.res.mjs";
+import * as AuthSDKGenerator from "./AuthSDKGenerator.res.mjs";
 import * as JsxRuntime from "react/jsx-runtime";
+import * as Caml_js_exceptions from "rescript/lib/es6/caml_js_exceptions.js";
 
 function StudioSpecEditor(props) {
   var match = React.useState(function () {
@@ -17,6 +20,16 @@ function StudioSpecEditor(props) {
         return "custom";
       });
   var setSelectedProvider = match$1[1];
+  var match$2 = React.useState(function () {
+        return false;
+      });
+  var setIsGenerating = match$2[1];
+  var isGenerating = match$2[0];
+  var match$3 = React.useState(function () {
+        
+      });
+  var setGenerationStatus = match$3[1];
+  var generationStatus = match$3[0];
   var providerTemplates = [
     [
       "custom",
@@ -32,6 +45,8 @@ function StudioSpecEditor(props) {
         clientSecret: Types.emptySpec.clientSecret,
         authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth",
         tokenUrl: "https://oauth2.googleapis.com/token",
+        introspectUrl: Types.emptySpec.introspectUrl,
+        revokeUrl: Types.emptySpec.revokeUrl,
         redirectUri: Types.emptySpec.redirectUri,
         scopes: [
           "openid",
@@ -49,11 +64,46 @@ function StudioSpecEditor(props) {
         clientSecret: Types.emptySpec.clientSecret,
         authorizeUrl: "https://github.com/login/oauth/authorize",
         tokenUrl: "https://github.com/login/oauth/access_token",
+        introspectUrl: Types.emptySpec.introspectUrl,
+        revokeUrl: Types.emptySpec.revokeUrl,
         redirectUri: Types.emptySpec.redirectUri,
         scopes: [
           "read:user",
           "user:email"
         ]
+      }
+    ],
+    [
+      "login-gov",
+      "Login.gov Sandbox",
+      {
+        name: "Login.gov Sandbox",
+        clientId: Types.emptySpec.clientId,
+        clientSecret: Types.emptySpec.clientSecret,
+        authorizeUrl: "https://idp.int.identitysandbox.gov/openid_connect/authorize",
+        tokenUrl: "https://idp.int.identitysandbox.gov/api/openid_connect/token",
+        introspectUrl: Types.emptySpec.introspectUrl,
+        revokeUrl: Types.emptySpec.revokeUrl,
+        redirectUri: Types.emptySpec.redirectUri,
+        scopes: [
+          "openid",
+          "email"
+        ]
+      }
+    ],
+    [
+      "id-me",
+      "ID.me Sandbox",
+      {
+        name: "ID.me Sandbox",
+        clientId: Types.emptySpec.clientId,
+        clientSecret: Types.emptySpec.clientSecret,
+        authorizeUrl: "https://api.idmelabs.com/oauth/authorize",
+        tokenUrl: "https://api.idmelabs.com/oauth/token",
+        introspectUrl: Types.emptySpec.introspectUrl,
+        revokeUrl: Types.emptySpec.revokeUrl,
+        redirectUri: Types.emptySpec.redirectUri,
+        scopes: ["openid"]
       }
     ],
     [
@@ -65,6 +115,8 @@ function StudioSpecEditor(props) {
         clientSecret: Types.emptySpec.clientSecret,
         authorizeUrl: "http://127.0.0.1:4444/oauth2/auth",
         tokenUrl: "http://127.0.0.1:4444/oauth2/token",
+        introspectUrl: Types.emptySpec.introspectUrl,
+        revokeUrl: Types.emptySpec.revokeUrl,
         redirectUri: Types.emptySpec.redirectUri,
         scopes: [
           "openid",
@@ -75,6 +127,61 @@ function StudioSpecEditor(props) {
       }
     ]
   ];
+  var generateSDK = function (language) {
+    setIsGenerating(function (param) {
+          return true;
+        });
+    setGenerationStatus(function (param) {
+          return "Generating " + language + " SDK...";
+        });
+    try {
+      var outputDir = "./generated/" + spec.name + "-" + language + "-sdk";
+      switch (language) {
+        case "python" :
+            AuthSDKGenerator.generatePythonSDK(spec, outputDir);
+            break;
+        case "typescript" :
+            AuthSDKGenerator.generateTypeScriptSDK(spec, outputDir);
+            break;
+        default:
+          
+      }
+      setGenerationStatus(function (param) {
+            return "✅ " + language + " SDK generated successfully!";
+          });
+      setTimeout((function () {
+              setGenerationStatus(function (param) {
+                    
+                  });
+            }), 3000);
+    }
+    catch (raw_obj){
+      var obj = Caml_js_exceptions.internalToOCamlException(raw_obj);
+      if (obj.RE_EXN_ID === Js_exn.$$Error) {
+        var message = Core__Option.getOr(obj._1.message, "Unknown error");
+        setGenerationStatus(function (param) {
+              return "❌ Error: " + message;
+            });
+        setTimeout((function () {
+                setGenerationStatus(function (param) {
+                      
+                    });
+              }), 5000);
+      } else {
+        setGenerationStatus(function (param) {
+              return "❌ Error: Unknown error occurred";
+            });
+        setTimeout((function () {
+                setGenerationStatus(function (param) {
+                      
+                    });
+              }), 5000);
+      }
+    }
+    setIsGenerating(function (param) {
+          return false;
+        });
+  };
   return JsxRuntime.jsxs("div", {
               children: [
                 JsxRuntime.jsx("header", {
@@ -100,9 +207,26 @@ function StudioSpecEditor(props) {
                                                   children: "Preview",
                                                   className: "px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
                                                 }),
-                                            JsxRuntime.jsx("button", {
-                                                  children: "Generate SDK",
-                                                  className: "px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                            JsxRuntime.jsxs("div", {
+                                                  children: [
+                                                    JsxRuntime.jsx("button", {
+                                                          children: isGenerating ? "Generating..." : "Generate TypeScript",
+                                                          className: "px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50",
+                                                          disabled: isGenerating,
+                                                          onClick: (function (param) {
+                                                              generateSDK("typescript");
+                                                            })
+                                                        }),
+                                                    JsxRuntime.jsx("button", {
+                                                          children: isGenerating ? "Generating..." : "Generate Python",
+                                                          className: "px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50",
+                                                          disabled: isGenerating,
+                                                          onClick: (function (param) {
+                                                              generateSDK("python");
+                                                            })
+                                                        })
+                                                  ],
+                                                  className: "flex items-center space-x-2"
                                                 })
                                           ],
                                           className: "flex items-center space-x-3"
@@ -114,6 +238,16 @@ function StudioSpecEditor(props) {
                           }),
                       className: "bg-white shadow-sm border-b"
                     }),
+                generationStatus !== undefined ? JsxRuntime.jsx("div", {
+                        children: JsxRuntime.jsx("div", {
+                              children: JsxRuntime.jsx("p", {
+                                    children: generationStatus,
+                                    className: "text-sm text-blue-800"
+                                  }),
+                              className: "bg-blue-50 border border-blue-200 rounded-md p-3"
+                            }),
+                        className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4"
+                      }) : null,
                 JsxRuntime.jsx("div", {
                       children: JsxRuntime.jsxs("div", {
                             children: [
@@ -170,6 +304,8 @@ function StudioSpecEditor(props) {
                                                                       clientSecret: s.clientSecret,
                                                                       authorizeUrl: s.authorizeUrl,
                                                                       tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: s.revokeUrl,
                                                                       redirectUri: s.redirectUri,
                                                                       scopes: s.scopes
                                                                     };
@@ -188,6 +324,8 @@ function StudioSpecEditor(props) {
                                                                       clientSecret: s.clientSecret,
                                                                       authorizeUrl: s.authorizeUrl,
                                                                       tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: s.revokeUrl,
                                                                       redirectUri: s.redirectUri,
                                                                       scopes: s.scopes
                                                                     };
@@ -206,6 +344,8 @@ function StudioSpecEditor(props) {
                                                                       clientSecret: s.clientSecret,
                                                                       authorizeUrl: value,
                                                                       tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: s.revokeUrl,
                                                                       redirectUri: s.redirectUri,
                                                                       scopes: s.scopes
                                                                     };
@@ -224,12 +364,54 @@ function StudioSpecEditor(props) {
                                                                       clientSecret: s.clientSecret,
                                                                       authorizeUrl: s.authorizeUrl,
                                                                       tokenUrl: value,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: s.revokeUrl,
                                                                       redirectUri: s.redirectUri,
                                                                       scopes: s.scopes
                                                                     };
                                                             });
                                                       }),
                                                     placeholder: "https://provider.com/oauth2/token"
+                                                  }),
+                                              JsxRuntime.jsx(FormField.make, {
+                                                    label: "Introspect URL (Optional)",
+                                                    value: Core__Option.getOr(spec.introspectUrl, ""),
+                                                    onChange: (function (value) {
+                                                        setSpec(function (s) {
+                                                              return {
+                                                                      name: s.name,
+                                                                      clientId: s.clientId,
+                                                                      clientSecret: s.clientSecret,
+                                                                      authorizeUrl: s.authorizeUrl,
+                                                                      tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: value === "" ? undefined : value,
+                                                                      revokeUrl: s.revokeUrl,
+                                                                      redirectUri: s.redirectUri,
+                                                                      scopes: s.scopes
+                                                                    };
+                                                            });
+                                                      }),
+                                                    placeholder: "https://provider.com/oauth2/introspect"
+                                                  }),
+                                              JsxRuntime.jsx(FormField.make, {
+                                                    label: "Revoke URL (Optional)",
+                                                    value: Core__Option.getOr(spec.revokeUrl, ""),
+                                                    onChange: (function (value) {
+                                                        setSpec(function (s) {
+                                                              return {
+                                                                      name: s.name,
+                                                                      clientId: s.clientId,
+                                                                      clientSecret: s.clientSecret,
+                                                                      authorizeUrl: s.authorizeUrl,
+                                                                      tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: value === "" ? undefined : value,
+                                                                      redirectUri: s.redirectUri,
+                                                                      scopes: s.scopes
+                                                                    };
+                                                            });
+                                                      }),
+                                                    placeholder: "https://provider.com/oauth2/revoke"
                                                   }),
                                               JsxRuntime.jsx(FormField.make, {
                                                     label: "Redirect URI",
@@ -242,6 +424,8 @@ function StudioSpecEditor(props) {
                                                                       clientSecret: s.clientSecret,
                                                                       authorizeUrl: s.authorizeUrl,
                                                                       tokenUrl: s.tokenUrl,
+                                                                      introspectUrl: s.introspectUrl,
+                                                                      revokeUrl: s.revokeUrl,
                                                                       redirectUri: value,
                                                                       scopes: s.scopes
                                                                     };
@@ -271,6 +455,8 @@ function StudioSpecEditor(props) {
                                                                               clientSecret: s.clientSecret,
                                                                               authorizeUrl: s.authorizeUrl,
                                                                               tokenUrl: s.tokenUrl,
+                                                                              introspectUrl: s.introspectUrl,
+                                                                              revokeUrl: s.revokeUrl,
                                                                               redirectUri: s.redirectUri,
                                                                               scopes: scopes
                                                                             };

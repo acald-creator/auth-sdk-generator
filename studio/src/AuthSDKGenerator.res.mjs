@@ -8,6 +8,8 @@ function convertToAuthSpec(spec) {
           clientSecret: spec.clientSecret,
           authorizeUrl: spec.authorizeUrl,
           tokenUrl: spec.tokenUrl,
+          introspectUrl: spec.introspectUrl,
+          revokeUrl: spec.revokeUrl,
           redirectUri: spec.redirectUri,
           scopes: spec.scopes
         };
