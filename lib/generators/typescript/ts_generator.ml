@@ -1,6 +1,109 @@
 open Ast.Auth_types
 
 let generate_oauth2_client (spec : auth_spec) (provider : provider) =
+  let pkce_code_challenge_method = match spec.protocol with
+    | OAuth2 config -> match config.pkce_method with
+      | S256 -> "'S256'"
+      | Plain -> "'plain'"
+      | NoPKCE -> "undefined"
+  in
+
+  let pkce_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
+  // PKCE Implementation (RFC 7636)
+  private generateCodeVerifier(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  }
+
+  private async generateCodeChallenge(verifier: string): Promise<string> {
+|} ^ (if config.pkce_method = S256 then {|
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+|} else {|
+    return verifier;
+|}) ^ {|
+  }
+|}
+    | _ -> ""
+  in
+
+  let start_auth_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
+  /**
+   * Start OAuth 2.0 authorization code flow with PKCE
+   */
+  async startAuth(): Promise<string> {
+    // Generate PKCE parameters
+    this.codeVerifier = this.generateCodeVerifier();
+    const codeChallenge = await this.generateCodeChallenge(this.codeVerifier);
+
+    // Build authorization URL
+    const authUrl = this.buildAuthUrl(codeChallenge);
+
+    return authUrl;
+  }
+|}
+    | _ -> {|
+  /**
+   * Start OAuth 2.0 authorization code flow
+   */
+  async startAuth(): Promise<string> {
+    // Build authorization URL
+    const authUrl = this.buildAuthUrl();
+
+    return authUrl;
+  }
+|}
+  in
+
+  let exchange_code_params = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> ",\n      code_verifier: this.codeVerifier"
+    | _ -> ""
+  in
+
+  let build_auth_url_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
+  private buildAuthUrl(codeChallenge: string): string {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      scope: (this.config.scopes || []).join(' '),
+      code_challenge: codeChallenge,
+      code_challenge_method: |} ^ pkce_code_challenge_method ^ {|,
+      state: crypto.randomUUID(),
+      ...this.config.extraParams,
+    });
+
+    return `${this.authorizeUrl}?${params.toString()}`;
+  }
+|}
+    | _ -> {|
+  private buildAuthUrl(): string {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      scope: (this.config.scopes || []).join(' '),
+      state: crypto.randomUUID(),
+      ...this.config.extraParams,
+    });
+
+    return `${this.authorizeUrl}?${params.toString()}`;
+  }
+|}
+  in
+
   Printf.sprintf {|
 /**
  * Generated TypeScript OAuth 2.0 Client
@@ -61,21 +164,7 @@ export class OAuth2Client {
     this.introspectUrl = config.introspectUrl ?? OAuth2Client.DEFAULT_INTROSPECT_URL;
     this.revokeUrl = config.revokeUrl ?? OAuth2Client.DEFAULT_REVOKE_URL;
   }
-
-  /**
-   * Start OAuth 2.0 authorization code flow with PKCE
-   */
-  async startAuth(): Promise<string> {
-    // Generate PKCE parameters
-    this.codeVerifier = this.generateCodeVerifier();
-    const codeChallenge = await this.generateCodeChallenge(this.codeVerifier);
-
-    // Build authorization URL
-    const authUrl = this.buildAuthUrl(codeChallenge);
-
-    return authUrl;
-  }
-
+%s
   /**
    * Exchange authorization code for tokens
    */
@@ -84,8 +173,7 @@ export class OAuth2Client {
       grant_type: 'authorization_code',
       client_id: this.config.clientId,
       code: code,
-      redirect_uri: this.config.redirectUri,
-      code_verifier: this.codeVerifier,
+      redirect_uri: this.config.redirectUri%s
     };
 
     if (this.config.clientSecret) {
@@ -220,42 +308,8 @@ export class OAuth2Client {
       body: new URLSearchParams(body),
     });
   }
-
-  // PKCE Implementation (RFC 7636)
-  private generateCodeVerifier(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  }
-
-  private async generateCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  }
-
-  private buildAuthUrl(codeChallenge: string): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
-      scope: (this.config.scopes || []).join(' '),
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      state: crypto.randomUUID(),
-      ...this.config.extraParams,
-    });
-
-    return `${this.authorizeUrl}?${params.toString()}`;
-  }
-
+%s
+%s
   private createAuthError(code: string, description?: string, uri?: string): AuthError {
     const error = new Error(description || code) as AuthError;
     error.code = code;
@@ -286,6 +340,10 @@ export default OAuth2Client;
                      |> List.map (fun s -> "\"" ^ s ^ "\"")
                      |> String.concat ", " in
      "[" ^ scopes_str ^ "]")
+    start_auth_impl
+    exchange_code_params
+    pkce_impl
+    build_auth_url_impl
 
 let generate_package_json ?(use_fallback_versions=false) (provider : provider) =
   (* Fetch latest versions for dev dependencies *)
@@ -339,6 +397,12 @@ let generate_tsconfig () = {|{
 }|}
 
 let generate_readme (spec : auth_spec) (provider : provider) =
+  let pkce_status = match spec.protocol with
+    | OAuth2 config -> (match config.pkce_method with
+      | S256 -> "Enabled (S256)"
+      | Plain -> "Enabled (plain)"
+      | NoPKCE -> "Disabled")
+  in
   Printf.sprintf {|# %s Auth SDK
 
 Generated OAuth 2.0 authentication SDK with PKCE support.
@@ -362,7 +426,7 @@ const client = new OAuth2Client({
 });
 
 // Start authentication
-const authUrl = await client.startAuth();
+const authUrl = await client.start_auth();
 window.location.href = authUrl;
 
 // Handle callback (extract code from URL parameters)
@@ -382,7 +446,7 @@ if (code) {
 - **Authorize URL**: %s
 - **Token URL**: %s
 - **Default Scopes**: %s
-- **PKCE**: Enabled (S256)
+- **PKCE**: %s
 - **State Parameter**: Required
 
 ## Development
@@ -396,6 +460,7 @@ To regenerate, run the generator with your updated specification.
     "[" ^ scopes_str ^ "]")
    provider.name provider.authorize_url provider.token_url
    (String.concat ", " provider.scopes)
+   pkce_status
 
 (** Main generation function *)
 let generate_typescript_sdk ?(use_fallback_versions=false) (spec : auth_spec) output_dir =

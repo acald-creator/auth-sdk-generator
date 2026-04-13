@@ -1,4 +1,5 @@
 open Printf
+open Ast.Auth_types
 
 exception Validation_error of string
 
@@ -35,14 +36,12 @@ let exec_command cmd =
   | _ -> (Unix.WEXITED 1, Some "Command execution failed")
 
 (** Enhanced validation with semantic and structural checks *)
-let validate_oauth2_structure code_string =
+let validate_oauth2_structure spec code_string =
   (* Check for required OAuth2 components *)
-  let required_patterns = [
+  let base_patterns = [
     ("OAuth2Client class", "class OAuth2Client");
     ("AuthConfig dataclass", "@dataclass");
     ("TokenSet dataclass", "class TokenSet");
-    ("PKCE code verifier", "_generate_code_verifier");
-    ("PKCE code challenge", "_generate_code_challenge");
     ("Authorization URL building", "_build_auth_url");
     ("Token exchange", "exchange_code");
     ("Token auto-refresh", "get_access_token");
@@ -53,6 +52,16 @@ let validate_oauth2_structure code_string =
     ("Hashlib import", "import hashlib");
     ("Time import", "import time");
   ] in
+
+  let pkce_patterns = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> [
+        ("PKCE code verifier", "_generate_code_verifier");
+        ("PKCE code challenge", "_generate_code_challenge");
+      ]
+    | _ -> []
+  in
+
+  let required_patterns = base_patterns @ pkce_patterns in
 
   let missing_components = List.filter (fun (_, pattern) ->
     not (contains_substring code_string pattern)
@@ -65,11 +74,11 @@ let validate_oauth2_structure code_string =
     Ok ()
 
 (** Enhanced Python validation with syntax and type checking *)
-let validate_python_syntax ?(check_oauth2=true) code_string =
+let validate_python_syntax ?(check_oauth2=true) spec code_string =
   (* First check OAuth2 structure if requested *)
   (match check_oauth2 with
    | true ->
-     (match validate_oauth2_structure code_string with
+     (match validate_oauth2_structure spec code_string with
       | Error msg -> Error msg
       | Ok () -> Ok ())
    | false -> Ok ()) |> function
@@ -208,7 +217,7 @@ let validate_generated_client spec provider =
   let client_code = Python_generator.Py_generator.generate_oauth2_client spec provider in
 
   (* First check OAuth2 structure *)
-  match validate_oauth2_structure client_code with
+  match validate_oauth2_structure spec client_code with
   | Error msg ->
       printf "   ❌ OAuth2 structure validation failed\n";
       raise (Validation_error msg)
@@ -216,7 +225,7 @@ let validate_generated_client spec provider =
       printf "   ✅ OAuth2 structure validation passed\n";
 
       (* Then check Python syntax *)
-      match validate_python_syntax ~check_oauth2:false client_code with
+      match validate_python_syntax ~check_oauth2:false spec client_code with
       | Ok () ->
           (* Run optional type checking *)
           (match validate_python_types client_code with

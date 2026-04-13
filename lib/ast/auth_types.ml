@@ -11,9 +11,15 @@ and protocol =
   | OAuth2 of oauth2_config
 [@@deriving show]
 
+and pkce_method =
+  | S256
+  | Plain
+  | NoPKCE
+[@@deriving show]
+
 and oauth2_config = {
   flows: oauth2_flow list;
-  pkce: bool;
+  pkce_method: pkce_method;
   state_required: bool;
 }
 [@@deriving show]
@@ -40,7 +46,7 @@ and provider = {
 let create_oauth2_spec name providers =
   {
     name;
-    protocol = OAuth2 { flows = [AuthorizationCode]; pkce = true; state_required = true };
+    protocol = OAuth2 { flows = [AuthorizationCode]; pkce_method = S256; state_required = true };
     providers;
   }
 

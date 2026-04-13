@@ -8,7 +8,8 @@
    test_version_fetcher
    test_ts_generator
    test_py_generator
-   test_validators)
+   test_validators
+   test_pkce_refactor)
  (libraries
    alcotest
    ast

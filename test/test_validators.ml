@@ -5,19 +5,19 @@ open Test_helpers
 let test_ts_structure_valid () =
   let code = Typescript_generator.Ts_generator.generate_oauth2_client
     sample_spec sample_provider in
-  match Validators.Typescript_validator.validate_oauth2_structure code with
+  match Validators.Typescript_validator.validate_oauth2_structure sample_spec code with
   | Ok () -> Alcotest.(check pass) "valid TS structure" () ()
   | Error msg -> Alcotest.fail msg
 
 let test_ts_structure_empty_fails () =
-  match Validators.Typescript_validator.validate_oauth2_structure "" with
+  match Validators.Typescript_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error for empty string"
   | Error msg ->
     check_contains ~msg:"lists missing components" msg "OAuth2Client class";
     check_contains ~msg:"lists AuthConfig" msg "AuthConfig interface"
 
 let test_ts_structure_partial_fails () =
-  match Validators.Typescript_validator.validate_oauth2_structure "class OAuth2Client {}" with
+  match Validators.Typescript_validator.validate_oauth2_structure sample_spec "class OAuth2Client {}" with
   | Ok () -> Alcotest.fail "expected Error for partial code"
   | Error msg ->
     check_contains ~msg:"lists missing" msg "AuthConfig interface"
@@ -27,18 +27,18 @@ let test_ts_structure_partial_fails () =
 let test_py_structure_valid () =
   let code = Python_generator.Py_generator.generate_oauth2_client
     sample_spec sample_provider in
-  match Validators.Python_validator.validate_oauth2_structure code with
+  match Validators.Python_validator.validate_oauth2_structure sample_spec code with
   | Ok () -> Alcotest.(check pass) "valid PY structure" () ()
   | Error msg -> Alcotest.fail msg
 
 let test_py_structure_empty_fails () =
-  match Validators.Python_validator.validate_oauth2_structure "" with
+  match Validators.Python_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error for empty string"
   | Error msg ->
     check_contains ~msg:"lists missing" msg "OAuth2Client class"
 
 let test_py_structure_partial_fails () =
-  match Validators.Python_validator.validate_oauth2_structure "class OAuth2Client:" with
+  match Validators.Python_validator.validate_oauth2_structure sample_spec "class OAuth2Client:" with
   | Ok () -> Alcotest.fail "expected Error for partial code"
   | Error msg ->
     check_contains ~msg:"lists missing imports" msg "Requests import"
@@ -51,7 +51,7 @@ let test_ts_syntax_valid () =
   else
     let code = Typescript_generator.Ts_generator.generate_oauth2_client
       sample_spec sample_provider in
-    match Validators.Typescript_validator.validate_typescript_syntax ~check_oauth2:false code with
+    match Validators.Typescript_validator.validate_typescript_syntax ~check_oauth2:false sample_spec code with
     | Ok () -> Alcotest.(check pass) "tsc passed" () ()
     | Error msg -> Alcotest.fail msg
 
@@ -61,18 +61,18 @@ let test_py_syntax_valid () =
   else
     let code = Python_generator.Py_generator.generate_oauth2_client
       sample_spec sample_provider in
-    match Validators.Python_validator.validate_python_syntax ~check_oauth2:false code with
+    match Validators.Python_validator.validate_python_syntax ~check_oauth2:false sample_spec code with
     | Ok () -> Alcotest.(check pass) "python3 passed" () ()
     | Error msg -> Alcotest.fail msg
 
 let test_ts_structure_requires_get_access_token () =
-  match Validators.Typescript_validator.validate_oauth2_structure "" with
+  match Validators.Typescript_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error"
   | Error msg ->
     check_contains ~msg:"lists getAccessToken" msg "Token auto-refresh"
 
 let test_py_structure_requires_get_access_token () =
-  match Validators.Python_validator.validate_oauth2_structure "" with
+  match Validators.Python_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error"
   | Error msg ->
     check_contains ~msg:"lists get_access_token" msg "Token auto-refresh"

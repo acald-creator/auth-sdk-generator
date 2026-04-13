@@ -3,6 +3,103 @@ open Ast.Auth_types
 
 (** Generate Python OAuth2 client code *)
 let generate_oauth2_client (spec : auth_spec) (provider : provider) =
+  let (pkce_method_str, pkce_code_challenge_method) = match spec.protocol with
+    | OAuth2 config -> match config.pkce_method with
+      | S256 -> ("S256", "'S256'")
+      | Plain -> ("plain", "'plain'")
+      | NoPKCE -> ("none", "None")
+  in
+
+  let _ = pkce_method_str in (* Avoid unused variable warning *)
+
+  let pkce_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> sprintf {|
+    # PKCE Implementation (RFC 7636)
+    def _generate_code_verifier(self) -> str:
+        """Generate PKCE code verifier"""
+        code_verifier = base64.urlsafe_b64encode(
+            secrets.token_bytes(32)
+        ).decode('utf-8')
+        # Remove padding
+        return code_verifier.rstrip('=')
+
+    def _generate_code_challenge(self, verifier: str) -> str:
+        """Generate PKCE code challenge"""
+        %s
+        # Remove padding
+        return challenge.rstrip('=')
+|} (if config.pkce_method = S256 then {|digest = hashlib.sha256(verifier.encode('utf-8')).digest()
+        challenge = base64.urlsafe_b64encode(digest).decode('utf-8')|}
+       else {|challenge = base64.urlsafe_b64encode(verifier.encode('utf-8')).decode('utf-8')|})
+    | _ -> ""
+  in
+
+  let start_auth_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
+    async def start_auth(self) -> str:
+        """Start OAuth 2.0 authorization code flow with PKCE"""
+        # Generate PKCE parameters
+        self._code_verifier = self._generate_code_verifier()
+        code_challenge = self._generate_code_challenge(self._code_verifier)
+
+        # Build authorization URL
+        auth_url = self._build_auth_url(code_challenge)
+        return auth_url
+|}
+    | _ -> {|
+    async def start_auth(self) -> str:
+        """Start OAuth 2.0 authorization code flow"""
+        # Build authorization URL
+        auth_url = self._build_auth_url()
+        return auth_url
+|}
+  in
+
+  let exchange_code_verifier = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
+            "code_verifier": self._code_verifier,|}
+    | _ -> ""
+  in
+
+  let build_auth_url_impl = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> sprintf {|
+    def _build_auth_url(self, code_challenge: str) -> str:
+        """Build authorization URL"""
+        params = {
+            "response_type": "code",
+            "client_id": self.config.client_id,
+            "redirect_uri": self.config.redirect_uri,
+            "scope": " ".join(self.config.scopes or []),
+            "code_challenge": code_challenge,
+            "code_challenge_method": %s,
+            "state": secrets.token_urlsafe(32),
+        }
+
+        # Add extra parameters if provided
+        if self.config.extra_params:
+            params.update(self.config.extra_params)
+
+        return f"{self._authorize_url}?{urllib.parse.urlencode(params)}"
+|} pkce_code_challenge_method
+    | _ -> {|
+    def _build_auth_url(self) -> str:
+        """Build authorization URL"""
+        params = {
+            "response_type": "code",
+            "client_id": self.config.client_id,
+            "redirect_uri": self.config.redirect_uri,
+            "scope": " ".join(self.config.scopes or []),
+            "state": secrets.token_urlsafe(32),
+        }
+
+        # Add extra parameters if provided
+        if self.config.extra_params:
+            params.update(self.config.extra_params)
+
+        return f"{self._authorize_url}?{urllib.parse.urlencode(params)}"
+|}
+  in
+
   sprintf {|
 """
 Generated Python OAuth 2.0 Client
@@ -77,25 +174,14 @@ class OAuth2Client:
         self._revoke_url = config.revoke_url or self.DEFAULT_REVOKE_URL
         self._current_tokens: Optional[TokenSet] = None
         self._expires_at: float = 0.0
-
-    async def start_auth(self) -> str:
-        """Start OAuth 2.0 authorization code flow with PKCE"""
-        # Generate PKCE parameters
-        self._code_verifier = self._generate_code_verifier()
-        code_challenge = self._generate_code_challenge(self._code_verifier)
-
-        # Build authorization URL
-        auth_url = self._build_auth_url(code_challenge)
-        return auth_url
-
+%s
     async def exchange_code(self, code: str, state: Optional[str] = None) -> TokenSet:
         """Exchange authorization code for tokens"""
         token_request: Dict[str, str] = {
             "grant_type": "authorization_code",
             "client_id": self.config.client_id,
             "code": code,
-            "redirect_uri": self.config.redirect_uri,
-            "code_verifier": self._code_verifier,
+            "redirect_uri": self.config.redirect_uri,%s
         }
 
         if self.config.client_secret:
@@ -238,40 +324,8 @@ class OAuth2Client:
             data=body,
             timeout=30
         )
-
-    # PKCE Implementation (RFC 7636)
-    def _generate_code_verifier(self) -> str:
-        """Generate PKCE code verifier"""
-        code_verifier = base64.urlsafe_b64encode(
-            secrets.token_bytes(32)
-        ).decode('utf-8')
-        # Remove padding
-        return code_verifier.rstrip('=')
-
-    def _generate_code_challenge(self, verifier: str) -> str:
-        """Generate PKCE code challenge"""
-        digest = hashlib.sha256(verifier.encode('utf-8')).digest()
-        challenge = base64.urlsafe_b64encode(digest).decode('utf-8')
-        # Remove padding
-        return challenge.rstrip('=')
-
-    def _build_auth_url(self, code_challenge: str) -> str:
-        """Build authorization URL"""
-        params = {
-            "response_type": "code",
-            "client_id": self.config.client_id,
-            "redirect_uri": self.config.redirect_uri,
-            "scope": " ".join(self.config.scopes or []),
-            "code_challenge": code_challenge,
-            "code_challenge_method": "S256",
-            "state": secrets.token_urlsafe(32),
-        }
-
-        # Add extra parameters if provided
-        if self.config.extra_params:
-            params.update(self.config.extra_params)
-
-        return f"{self._authorize_url}?{urllib.parse.urlencode(params)}"
+%s
+%s
 |}
     spec.name
     provider.name
@@ -284,6 +338,10 @@ class OAuth2Client:
     (match provider.introspect_url with Some u -> u | None -> "")
     (match provider.revoke_url with Some u -> u | None -> "")
     (String.concat ", " (List.map (fun s -> sprintf "\"%s\"" s) provider.scopes))
+    start_auth_impl
+    exchange_code_verifier
+    pkce_impl
+    build_auth_url_impl
 
 (** Generate Python package setup file *)
 let generate_setup_py (_spec : auth_spec) (provider : provider) =
@@ -339,6 +397,12 @@ let generate_requirements () =
 
 (** Generate Python README.md *)
 let generate_readme (spec : auth_spec) (provider : provider) =
+  let pkce_status = match spec.protocol with
+    | OAuth2 config -> (match config.pkce_method with
+      | S256 -> "Enabled (S256)"
+      | Plain -> "Enabled (plain)"
+      | NoPKCE -> "Disabled")
+  in
   sprintf {|# %s Auth SDK
 
 Generated OAuth 2.0 authentication SDK with PKCE support.
@@ -387,7 +451,7 @@ if __name__ == "__main__":
 - **Authorize URL**: %s
 - **Token URL**: %s
 - **Default Scopes**: %s
-- **PKCE**: Enabled (S256)
+- **PKCE**: %s
 - **State Parameter**: Required
 
 ## Development
@@ -420,6 +484,7 @@ mypy auth_sdk/
     provider.authorize_url
     provider.token_url
     (String.concat ", " provider.scopes)
+    pkce_status
 
 (** Generate Python __init__.py file *)
 let generate_init () =

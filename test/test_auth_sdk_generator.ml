@@ -6,4 +6,5 @@ let () =
     ("TypeScript Generator", Test_ts_generator.tests);
     ("Python Generator", Test_py_generator.tests);
     ("Validators", Test_validators.tests);
+    ("PKCE Refactor", Test_pkce_refactor.tests);
   ]

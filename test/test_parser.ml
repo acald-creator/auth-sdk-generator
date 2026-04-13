@@ -104,7 +104,8 @@ let test_parse_always_produces_authcode_pkce () =
   let spec = Parsers.Simple_parser.parse_simple_dsl {|client_id = "abc"|} in
   match spec.protocol with
   | OAuth2 config ->
-    Alcotest.(check bool) "pkce" true config.pkce;
+    let pkce_testable = Alcotest.testable pp_pkce_method (=) in
+    Alcotest.(check pkce_testable) "pkce_method" S256 config.pkce_method;
     Alcotest.(check bool) "state_required" true config.state_required;
     Alcotest.(check int) "one flow" 1 (List.length config.flows);
     Alcotest.(check bool) "AuthorizationCode" true
