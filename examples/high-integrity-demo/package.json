@@ -1,0 +1,29 @@
+{
+  "name": "default-auth-sdk",
+  "version": "1.0.0-prototype",
+  "description": "Generated OAuth 2.0 authentication SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["oauth2", "authentication", "pkce", "generated"],
+  "dependencies": {
+    "@oauth-pkce/client": "workspace:*",
+    "@oauth-pkce/tokens": "workspace:*",
+    "@oauth-pkce/react": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/node": "^25.6.0",
+    "jest": "^30.3.0",
+    "@types/jest": "^30.0.0"
+  },
+  "files": ["dist/**/*", "README.md"]
+}

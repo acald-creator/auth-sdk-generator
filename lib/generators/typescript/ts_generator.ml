@@ -1,352 +1,117 @@
 open Ast.Auth_types
 
+let sanitize_name name =
+  let is_alphanumeric = function
+    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true
+    | _ -> false
+  in
+  let res = Buffer.create (String.length name) in
+  String.iter (fun c -> if is_alphanumeric c then Buffer.add_char res c) name;
+  Buffer.contents res
+
+let get_issuer_url url =
+  try
+    let regex = Str.regexp "\\(https?://[^/]+\\)" in
+    if Str.string_match regex url 0 then
+      Str.matched_group 1 url
+    else
+      url
+  with _ -> url
+
 let generate_oauth2_client (spec : auth_spec) (provider : provider) =
-  let pkce_code_challenge_method = match spec.protocol with
-    | OAuth2 config -> match config.pkce_method with
-      | S256 -> "'S256'"
-      | Plain -> "'plain'"
-      | NoPKCE -> "undefined"
+  let client_name = sanitize_name spec.name in
+  let scopes_list = 
+    match provider.scopes with
+    | [] -> "[]"
+    | _ -> "[" ^ (provider.scopes |> List.map (fun s -> "\"" ^ s ^ "\"") |> String.concat ", ") ^ "]"
   in
-
-  let pkce_impl = match spec.protocol with
-    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
-  // PKCE Implementation (RFC 7636)
-  private generateCodeVerifier(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-  }
-
-  private async generateCodeChallenge(verifier: string): Promise<string> {
-|} ^ (if config.pkce_method = S256 then {|
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-|} else {|
-    return verifier;
-|}) ^ {|
-  }
-|}
-    | _ -> ""
-  in
-
-  let start_auth_impl = match spec.protocol with
-    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
-  /**
-   * Start OAuth 2.0 authorization code flow with PKCE
-   */
-  async startAuth(): Promise<string> {
-    // Generate PKCE parameters
-    this.codeVerifier = this.generateCodeVerifier();
-    const codeChallenge = await this.generateCodeChallenge(this.codeVerifier);
-
-    // Build authorization URL
-    const authUrl = this.buildAuthUrl(codeChallenge);
-
-    return authUrl;
-  }
-|}
-    | _ -> {|
-  /**
-   * Start OAuth 2.0 authorization code flow
-   */
-  async startAuth(): Promise<string> {
-    // Build authorization URL
-    const authUrl = this.buildAuthUrl();
-
-    return authUrl;
-  }
-|}
-  in
-
-  let exchange_code_params = match spec.protocol with
-    | OAuth2 config when config.pkce_method <> NoPKCE -> ",\n      code_verifier: this.codeVerifier"
-    | _ -> ""
-  in
-
-  let build_auth_url_impl = match spec.protocol with
-    | OAuth2 config when config.pkce_method <> NoPKCE -> {|
-  private buildAuthUrl(codeChallenge: string): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
-      scope: (this.config.scopes || []).join(' '),
-      code_challenge: codeChallenge,
-      code_challenge_method: |} ^ pkce_code_challenge_method ^ {|,
-      state: crypto.randomUUID(),
-      ...this.config.extraParams,
-    });
-
-    return `${this.authorizeUrl}?${params.toString()}`;
-  }
-|}
-    | _ -> {|
-  private buildAuthUrl(): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
-      scope: (this.config.scopes || []).join(' '),
-      state: crypto.randomUUID(),
-      ...this.config.extraParams,
-    });
-
-    return `${this.authorizeUrl}?${params.toString()}`;
-  }
-|}
-  in
+  let issuer_url = get_issuer_url provider.authorize_url in
 
   Printf.sprintf {|
 /**
- * Generated TypeScript OAuth 2.0 Client
+ * Generated High-Integrity OAuth 2.0 Client
+ * Factory: Auth SDK Generator
+ * Foundation: @oauth-pkce/client
  * Specification: %s
- * Provider: %s
- * Generated at: %s
  */
 
-export interface AuthConfig {
-  clientId: string;
-  clientSecret?: string;
-  redirectUri: string;
-  authorizeUrl?: string;
-  tokenUrl?: string;
-  introspectUrl?: string;
-  revokeUrl?: string;
-  scopes?: string[];
-  extraParams?: Record<string, string>;
-}
+import { OAuthClient } from "@oauth-pkce/client";
+import { TokenManager } from "@oauth-pkce/tokens";
+import { AuthProvider as BaseProvider, LoginButton } from "@oauth-pkce/react";
+import React, { useMemo } from "react";
 
-export interface TokenSet {
-  access_token: string;
-  refresh_token?: string;
-  expires_in: number;
-  token_type: string;
-  scope?: string;
-}
-
-export interface AuthError extends Error {
-  code: string;
-  description?: string;
-  uri?: string;
-}
-
-export class OAuth2Client {
-  private config: AuthConfig;
-  private codeVerifier: string = '';
-  private readonly authorizeUrl: string;
-  private readonly tokenUrl: string;
-  private readonly introspectUrl: string;
-  private readonly revokeUrl: string;
-  private currentTokens: (TokenSet & { expires_at: number }) | null = null;
-
-  // Default OAuth 2.0 endpoints (generated from spec)
-  private static readonly DEFAULT_AUTHORIZE_URL = '%s';
-  private static readonly DEFAULT_TOKEN_URL = '%s';
-  private static readonly DEFAULT_INTROSPECT_URL = '%s';
-  private static readonly DEFAULT_REVOKE_URL = '%s';
-  private static readonly DEFAULT_SCOPES = %s;
-
-  constructor(config: AuthConfig) {
-    this.config = {
-      scopes: OAuth2Client.DEFAULT_SCOPES,
+/**
+ * %sClient - A specialized, high-integrity SDK for %s.
+ * 
+ * This SDK is built upon the @oauth-pkce foundation, providing:
+ * - Bulletproof PKCE (S256) implementation
+ * - Secure URL sanitization (CRLF defense)
+ * - Stateful token management with proactive refreshing
+ * - Cross-tab synchronization
+ */
+export class %sClient extends OAuthClient {
+  constructor(config: any = {}) {
+    super({
+      issuerBaseUrl: "%s",
+      authorizePath: "%s",
+      tokenPath: "%s",
+      logoutPath: "%s",
+      scopes: %s,
       ...config
-    };
-    this.authorizeUrl = config.authorizeUrl ?? OAuth2Client.DEFAULT_AUTHORIZE_URL;
-    this.tokenUrl = config.tokenUrl ?? OAuth2Client.DEFAULT_TOKEN_URL;
-    this.introspectUrl = config.introspectUrl ?? OAuth2Client.DEFAULT_INTROSPECT_URL;
-    this.revokeUrl = config.revokeUrl ?? OAuth2Client.DEFAULT_REVOKE_URL;
-  }
-%s
-  /**
-   * Exchange authorization code for tokens
-   */
-  async exchangeCode(code: string, state?: string): Promise<TokenSet> {
-    const tokenRequest: Record<string, string> = {
-      grant_type: 'authorization_code',
-      client_id: this.config.clientId,
-      code: code,
-      redirect_uri: this.config.redirectUri%s
-    };
-
-    if (this.config.clientSecret) {
-      tokenRequest.client_secret = this.config.clientSecret;
-    }
-
-    const response = await fetch(this.tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: new URLSearchParams(tokenRequest),
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({})) as Record<string, string>;
-      throw this.createAuthError(
-        error.error || 'token_exchange_failed',
-        error.error_description || `HTTP ${response.status}`,
-        error.error_uri
-      );
-    }
-
-    const tokens: TokenSet = await response.json() as TokenSet;
-    this.currentTokens = {
-      ...tokens,
-      expires_at: Date.now() + tokens.expires_in * 1000,
-    };
-    return tokens;
-  }
-
-  /**
-   * Refresh access token
-   */
-  async refreshToken(refreshToken: string): Promise<TokenSet> {
-    const tokenRequest: Record<string, string> = {
-      grant_type: 'refresh_token',
-      client_id: this.config.clientId,
-      refresh_token: refreshToken,
-    };
-
-    if (this.config.clientSecret) {
-      tokenRequest.client_secret = this.config.clientSecret;
-    }
-
-    const response = await fetch(this.tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: new URLSearchParams(tokenRequest),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({})) as Record<string, string>;
-      throw this.createAuthError(
-        error.error || 'refresh_failed',
-        error.error_description || `HTTP ${response.status}`,
-        error.error_uri
-      );
-    }
-
-    const tokens: TokenSet = await response.json() as TokenSet;
-    this.currentTokens = {
-      ...tokens,
-      expires_at: Date.now() + tokens.expires_in * 1000,
-    };
-    return tokens;
-  }
-
-  /**
-   * Get a valid access token, refreshing automatically if expired.
-   * Returns null if no tokens are stored and no refresh is possible.
-   */
-  async getAccessToken(): Promise<string | null> {
-    if (!this.currentTokens) {
-      return null;
-    }
-
-    // Check if token is expired (with 60-second buffer)
-    const isExpired = Date.now() >= this.currentTokens.expires_at - 60_000;
-
-    if (!isExpired) {
-      return this.currentTokens.access_token;
-    }
-
-    // Try to refresh
-    if (this.currentTokens.refresh_token) {
-      const refreshed = await this.refreshToken(this.currentTokens.refresh_token);
-      return refreshed.access_token;
-    }
-
-    // Token expired, no refresh token available
-    return null;
-  }
-
-  /**
-   * Introspect a token to check if it is active (RFC 7662)
-   */
-  async introspectToken(token: string): Promise<Record<string, unknown>> {
-    const body: Record<string, string> = { token };
-    if (this.config.clientId) body.client_id = this.config.clientId;
-    if (this.config.clientSecret) body.client_secret = this.config.clientSecret;
-
-    const response = await fetch(this.introspectUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
-      body: new URLSearchParams(body),
-    });
-
-    return await response.json() as Record<string, unknown>;
-  }
-
-  /**
-   * Revoke a token (RFC 7009)
-   */
-  async revokeToken(token: string): Promise<void> {
-    const body: Record<string, string> = { token };
-    if (this.config.clientId) body.client_id = this.config.clientId;
-    if (this.config.clientSecret) body.client_secret = this.config.clientSecret;
-
-    await fetch(this.revokeUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(body),
-    });
-  }
-%s
-%s
-  private createAuthError(code: string, description?: string, uri?: string): AuthError {
-    const error = new Error(description || code) as AuthError;
-    error.code = code;
-    if (description !== undefined) {
-      error.description = description;
-    }
-    if (uri !== undefined) {
-      error.uri = uri;
-    }
-    return error;
   }
 }
 
-// Export for convenience
-export default OAuth2Client;
+/**
+ * %sProvider - React Context Provider specialized for %s.
+ */
+export function %sProvider({ config, children }: any) {
+  const mergedConfig = useMemo(() => ({
+    issuerBaseUrl: "%s",
+    authorizePath: "%s",
+    tokenPath: "%s",
+    logoutPath: "%s",
+    scopes: %s,
+    ...config
+  }), [config]);
+
+  return React.createElement(BaseProvider, { config: mergedConfig }, children);
+}
+
+/**
+ * %sLoginButton - Specialized login button for %s.
+ */
+export function %sLoginButton(props: any) {
+  return React.createElement(LoginButton, {
+    provider: "default",
+    label: "Sign in with %s",
+    ...props
+  });
+}
 |}
     spec.name
-    provider.name
-    (let now = Unix.time () |> Unix.gmtime in
-     Printf.sprintf "%04d-%02d-%02d %02d:%02d:%02d UTC"
-       (now.tm_year + 1900) (now.tm_mon + 1) now.tm_mday
-       now.tm_hour now.tm_min now.tm_sec)
+    client_name
+    spec.name
+    client_name
+    issuer_url
     provider.authorize_url
     provider.token_url
-    (match provider.introspect_url with Some u -> u | None -> "")
-    (match provider.revoke_url with Some u -> u | None -> "")
-    (let scopes_str = provider.scopes
-                     |> List.map (fun s -> "\"" ^ s ^ "\"")
-                     |> String.concat ", " in
-     "[" ^ scopes_str ^ "]")
-    start_auth_impl
-    exchange_code_params
-    pkce_impl
-    build_auth_url_impl
+    (match provider.revoke_url with Some u -> u | None -> "/logout")
+    scopes_list
+    client_name
+    spec.name
+    client_name
+    issuer_url
+    provider.authorize_url
+    provider.token_url
+    (match provider.revoke_url with Some u -> u | None -> "/logout")
+    scopes_list
+    client_name
+    spec.name
+    client_name
+    spec.name
 
 let generate_package_json ?(use_fallback_versions=false) (provider : provider) =
-  (* Fetch latest versions for dev dependencies *)
   let versions = Utils.Version_fetcher.get_typescript_versions ~use_fallback_first:use_fallback_versions () in
   let _ = Utils.Version_fetcher.validate_package_versions versions in
   let get_version name = List.assoc name versions in
@@ -363,9 +128,17 @@ let generate_package_json ?(use_fallback_versions=false) (provider : provider) =
     "dev": "tsc --watch"
   },
   "keywords": ["oauth2", "authentication", "pkce", "generated"],
-  "dependencies": {},
+  "dependencies": {
+    "@oauth-pkce/client": "workspace:*",
+    "@oauth-pkce/tokens": "workspace:*",
+    "@oauth-pkce/react": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "typescript": "^%s",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "@types/node": "^%s",
     "jest": "^%s",
     "@types/jest": "^%s"
@@ -377,70 +150,55 @@ let generate_package_json ?(use_fallback_versions=false) (provider : provider) =
     (get_version "jest")
     (get_version "@types/jest")
 
-let generate_tsconfig () = {|{
+let generate_tsconfig () =
+  {|{
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "lib": ["ES2020", "DOM"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
-}|}
+  "exclude": ["node_modules", "**/*.test.ts"]
+}
+|}
 
 let generate_readme (spec : auth_spec) (provider : provider) =
   let pkce_status = match spec.protocol with
-    | OAuth2 config -> (match config.pkce_method with
-      | S256 -> "Enabled (S256)"
-      | Plain -> "Enabled (plain)"
-      | NoPKCE -> "Disabled")
+    | OAuth2 config -> if config.pkce_method <> NoPKCE then "Enabled (S256)" else "Disabled"
   in
-  Printf.sprintf {|# %s Auth SDK
+  let client_name = sanitize_name spec.name in
+  Printf.sprintf {|# %s SDK
 
-Generated OAuth 2.0 authentication SDK with PKCE support.
+High-integrity TypeScript SDK for %s, generated by the Auth SDK Generator.
 
-## Installation
+## Integration
 
-```bash
-npm install
-npm run build
-```
+This SDK is built on the `@oauth-pkce` foundation.
 
-## Usage
+### React
 
-```typescript
-import OAuth2Client from './src/index';
+```tsx
+import { %sProvider, %sLoginButton } from './sdk';
 
-const client = new OAuth2Client({
-  clientId: '%s',
-  redirectUri: 'http://localhost:3000/callback',
-  scopes: %s
-});
-
-// Start authentication
-const authUrl = await client.start_auth();
-window.location.href = authUrl;
-
-// Handle callback (extract code from URL parameters)
-const urlParams = new URLSearchParams(window.location.search);
-const code = urlParams.get('code');
-const state = urlParams.get('state');
-
-if (code) {
-  const tokens = await client.exchangeCode(code, state);
-  console.log('Access token:', tokens.access_token);
+function App() {
+  return (
+    <%sProvider config={{ clientId: '%s' }}>
+      <%sLoginButton />
+    </%sProvider>
+  );
 }
 ```
 
-## Generated Configuration
+## Technical Details
 
 - **Provider**: %s
 - **Authorize URL**: %s
@@ -453,31 +211,25 @@ if (code) {
 
 This SDK was generated using the OCaml-based auth SDK generator.
 To regenerate, run the generator with your updated specification.
-|} spec.name provider.client_id
-   (let scopes_str = provider.scopes
-                    |> List.map (fun s -> "'" ^ s ^ "'")
-                    |> String.concat ", " in
-    "[" ^ scopes_str ^ "]")
+|} spec.name spec.name
+   client_name client_name client_name provider.client_id client_name client_name
    provider.name provider.authorize_url provider.token_url
    (String.concat ", " provider.scopes)
    pkce_status
 
 (** Main generation function *)
 let generate_typescript_sdk ?(use_fallback_versions=false) (spec : auth_spec) output_dir =
-  let provider = List.hd spec.providers in (* Use first provider for prototype *)
+  let provider = List.hd spec.providers in
 
-  (* Generate source files *)
   let client_code = generate_oauth2_client spec provider in
   let package_json = generate_package_json ~use_fallback_versions provider in
   let tsconfig = generate_tsconfig () in
   let readme = generate_readme spec provider in
 
-  (* Create directory structure *)
   let src_dir = Filename.concat output_dir "src" in
   (try Unix.mkdir output_dir 0o755 with Unix.Unix_error (EEXIST, _, _) -> ());
   (try Unix.mkdir src_dir 0o755 with Unix.Unix_error (EEXIST, _, _) -> ());
 
-  (* Write files *)
   let write_file filename content =
     let oc = open_out filename in
     output_string oc content;
