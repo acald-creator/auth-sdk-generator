@@ -13,14 +13,14 @@ let test_ts_structure_empty_fails () =
   match Validators.Typescript_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error for empty string"
   | Error msg ->
-    check_contains ~msg:"lists missing components" msg "OAuth2Client class";
-    check_contains ~msg:"lists AuthConfig" msg "AuthConfig interface"
+    check_contains ~msg:"lists missing components" msg "OAuthClient extension";
+    check_contains ~msg:"lists Foundation" msg "Foundation import"
 
 let test_ts_structure_partial_fails () =
-  match Validators.Typescript_validator.validate_oauth2_structure sample_spec "class OAuth2Client {}" with
+  match Validators.Typescript_validator.validate_oauth2_structure sample_spec "class TestAppClient {}" with
   | Ok () -> Alcotest.fail "expected Error for partial code"
   | Error msg ->
-    check_contains ~msg:"lists missing" msg "AuthConfig interface"
+    check_contains ~msg:"lists missing" msg "Foundation import"
 
 (* --- Python validator structure checks --- *)
 
@@ -65,11 +65,11 @@ let test_py_syntax_valid () =
     | Ok () -> Alcotest.(check pass) "python3 passed" () ()
     | Error msg -> Alcotest.fail msg
 
-let test_ts_structure_requires_get_access_token () =
+let test_ts_structure_requires_provider () =
   match Validators.Typescript_validator.validate_oauth2_structure sample_spec "" with
   | Ok () -> Alcotest.fail "expected Error"
   | Error msg ->
-    check_contains ~msg:"lists getAccessToken" msg "Token auto-refresh"
+    check_contains ~msg:"lists Provider" msg "Provider component"
 
 let test_py_structure_requires_get_access_token () =
   match Validators.Python_validator.validate_oauth2_structure sample_spec "" with
@@ -86,6 +86,6 @@ let tests = [
   Alcotest.test_case "PY structure: partial code fails" `Quick test_py_structure_partial_fails;
   Alcotest.test_case "TS syntax: generated code compiles" `Slow test_ts_syntax_valid;
   Alcotest.test_case "PY syntax: generated code compiles" `Slow test_py_syntax_valid;
-  Alcotest.test_case "TS structure: requires getAccessToken" `Quick test_ts_structure_requires_get_access_token;
+  Alcotest.test_case "TS structure: requires Provider" `Quick test_ts_structure_requires_provider;
   Alcotest.test_case "PY structure: requires get_access_token" `Quick test_py_structure_requires_get_access_token;
 ]

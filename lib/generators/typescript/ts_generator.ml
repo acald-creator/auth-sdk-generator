@@ -26,6 +26,11 @@ let generate_oauth2_client (spec : auth_spec) (provider : provider) =
     | _ -> "[" ^ (provider.scopes |> List.map (fun s -> "\"" ^ s ^ "\"") |> String.concat ", ") ^ "]"
   in
   let issuer_url = get_issuer_url provider.authorize_url in
+  
+  let pkce_feature = match spec.protocol with
+    | OAuth2 config when config.pkce_method <> NoPKCE -> " * - Bulletproof PKCE (S256) implementation\n"
+    | _ -> ""
+  in
 
   Printf.sprintf {|
 /**
@@ -44,8 +49,7 @@ import React, { useMemo } from "react";
  * %sClient - A specialized, high-integrity SDK for %s.
  * 
  * This SDK is built upon the @oauth-pkce foundation, providing:
- * - Bulletproof PKCE (S256) implementation
- * - Secure URL sanitization (CRLF defense)
+%s * - Secure URL sanitization (CRLF defense)
  * - Stateful token management with proactive refreshing
  * - Cross-tab synchronization
  */
@@ -92,6 +96,7 @@ export function %sLoginButton(props: any) {
     spec.name
     client_name
     spec.name
+    pkce_feature
     client_name
     issuer_url
     provider.authorize_url

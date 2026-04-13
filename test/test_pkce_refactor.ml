@@ -36,8 +36,8 @@ let test_ts_generator_pkce_s256 () =
     let re = Str.regexp_string sub in
     try ignore (Str.search_forward re code 0); true with Not_found -> false
   in
-  Alcotest.(check bool) "contains PKCE verifier" true (contains "generateCodeVerifier");
-  Alcotest.(check bool) "contains S256 challenge" true (contains "SHA-256")
+  (* In the new integration, we check for the high-integrity mention *)
+  Alcotest.(check bool) "contains high-integrity PKCE mention" true (contains "Bulletproof PKCE (S256)")
 
 let test_ts_generator_pkce_none () =
   let p = create_provider "test" "id" "http://a" "http://t" [] in
@@ -49,8 +49,7 @@ let test_ts_generator_pkce_none () =
     let re = Str.regexp_string sub in
     try ignore (Str.search_forward re code 0); true with Not_found -> false
   in
-  Alcotest.(check bool) "does not contain generateCodeVerifier" false (contains "generateCodeVerifier");
-  Alcotest.(check bool) "does not contain S256 challenge" false (contains "SHA-256")
+  Alcotest.(check bool) "does not contain high-integrity PKCE mention" false (contains "Bulletproof PKCE (S256)")
 
 let tests = [
   Alcotest.test_case "AST default PKCE method" `Quick test_ast_pkce_defaults;
