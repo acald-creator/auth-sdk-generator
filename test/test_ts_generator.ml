@@ -9,8 +9,8 @@ let test_contains_client_class () =
 
 let test_contains_foundation_imports () =
   let code = Lazy.force client_code in
-  check_contains ~msg:"foundation client import" code "from \"@oauth-pkce/client\"";
-  check_contains ~msg:"foundation react import" code "from \"@oauth-pkce/react\""
+  check_contains ~msg:"foundation client import" code "from \"@cosmonexus/oauth-client\"";
+  check_contains ~msg:"foundation react import" code "from \"@cosmonexus/oauth-react\""
 
 let test_contains_provider_urls () =
   let code = Lazy.force client_code in
@@ -35,7 +35,7 @@ let test_package_json_versions () =
   let json = Typescript_generator.Ts_generator.generate_package_json
     ~use_fallback_versions:true sample_provider in
   check_contains ~msg:"typescript version" json "\"typescript\": \"^5.9.2\"";
-  check_contains ~msg:"@oauth-pkce client" json "\"@oauth-pkce/client\": \"workspace:*\""
+  check_contains ~msg:"@cosmonexus client" json "\"@cosmonexus/oauth-client\": \"workspace:*\""
 
 let test_package_json_valid_json () =
   let json = Typescript_generator.Ts_generator.generate_package_json

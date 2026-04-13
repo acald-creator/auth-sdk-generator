@@ -39,8 +39,8 @@ let validate_oauth2_structure spec code_string =
   (* Check for required OAuth2 components in the new high-integrity structure *)
   let base_patterns = [
     ("OAuthClient extension", "extends OAuthClient");
-    ("Foundation import", "from \"@oauth-pkce/client\"");
-    ("React integration", "from \"@oauth-pkce/react\"");
+    ("Foundation import", "from \"@cosmonexus/oauth-client\"");
+    ("React integration", "from \"@cosmonexus/oauth-react\"");
     ("Provider component", "Provider({ config, children }");
     ("LoginButton component", "LoginButton(props");
     ("React import", "import React");
@@ -113,7 +113,7 @@ let validate_typescript_syntax ?(check_oauth2=true) spec code_string =
   let () = close_out oc2 in
 
   (* Run TypeScript compiler with enhanced reporting *)
-  (* Note: tsc might fail due to missing @oauth-pkce packages in the temp dir, 
+  (* Note: tsc might fail due to missing @cosmonexus packages in the temp dir, 
      so we skip the full compilation check here if we can't resolve workspaces *)
   Printf.printf "   ⚠️  Skipping strict TS compilation check (missing workspace dependencies)\n";
   Ok ()

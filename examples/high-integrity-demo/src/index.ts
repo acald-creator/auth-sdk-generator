@@ -2,19 +2,19 @@
 /**
  * Generated High-Integrity OAuth 2.0 Client
  * Factory: Auth SDK Generator
- * Foundation: @oauth-pkce/client
+ * Foundation: @cosmonexus/oauth-client
  * Specification: Login.gov Sandbox
  */
 
-import { OAuthClient } from "@oauth-pkce/client";
-import { TokenManager } from "@oauth-pkce/tokens";
-import { AuthProvider as BaseProvider, LoginButton } from "@oauth-pkce/react";
+import { OAuthClient } from "@cosmonexus/oauth-client";
+import { TokenManager } from "@cosmonexus/oauth-tokens";
+import { AuthProvider as BaseProvider, LoginButton } from "@cosmonexus/oauth-react";
 import React, { useMemo } from "react";
 
 /**
  * LogingovSandboxClient - A specialized, high-integrity SDK for Login.gov Sandbox.
  * 
- * This SDK is built upon the @oauth-pkce foundation, providing:
+ * This SDK is built upon the @cosmonexus foundation, providing:
  * - Bulletproof PKCE (S256) implementation
  * - Secure URL sanitization (CRLF defense)
  * - Stateful token management with proactive refreshing
