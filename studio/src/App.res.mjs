@@ -38,7 +38,8 @@ function App(props) {
                   });
     case "Templates" :
         return JsxRuntime.jsx(TemplatesView.make, {
-                    goBack: goToDashboard
+                    goBack: goToDashboard,
+                    goToSpecEditor: goToSpecEditor
                   });
     
   }

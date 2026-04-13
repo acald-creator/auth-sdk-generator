@@ -4,6 +4,7 @@ import * as TemplateCard from "../Components/TemplateCard.res.mjs";
 import * as JsxRuntime from "react/jsx-runtime";
 
 function TemplatesView(props) {
+  var goToSpecEditor = props.goToSpecEditor;
   var goBack = props.goBack;
   return JsxRuntime.jsxs("div", {
               children: [
@@ -38,32 +39,66 @@ function TemplatesView(props) {
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "Google OAuth",
                                     description: "Google Cloud OAuth 2.0 configuration",
-                                    icon: "🔍"
+                                    icon: "🔍",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   }),
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "GitHub OAuth",
                                     description: "GitHub OAuth Apps configuration",
-                                    icon: "🐙"
+                                    icon: "🐙",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
+                                  }),
+                              JsxRuntime.jsx(TemplateCard.make, {
+                                    name: "Login.gov Sandbox",
+                                    description: "Login.gov OIDC Sandbox environment",
+                                    icon: "🇺🇸",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
+                                  }),
+                              JsxRuntime.jsx(TemplateCard.make, {
+                                    name: "ID.me Sandbox",
+                                    description: "ID.me OIDC Sandbox environment",
+                                    icon: "🆔",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   }),
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "Ory Hydra",
                                     description: "Ory Hydra OAuth 2.0 server",
-                                    icon: "🌊"
+                                    icon: "🌊",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   }),
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "Auth0",
                                     description: "Auth0 Universal Login",
-                                    icon: "🔐"
+                                    icon: "🔐",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   }),
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "Microsoft Azure",
                                     description: "Azure Active Directory",
-                                    icon: "🏢"
+                                    icon: "🏢",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   }),
                               JsxRuntime.jsx(TemplateCard.make, {
                                     name: "Custom Provider",
                                     description: "Build your own OAuth configuration",
-                                    icon: "⚙️"
+                                    icon: "⚙️",
+                                    onClick: (function (param) {
+                                        goToSpecEditor();
+                                      })
                                   })
                             ],
                             className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"

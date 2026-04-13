@@ -1,6 +1,6 @@
 // Templates View - OAuth Provider Templates
 @react.component
-let make = (~goBack) => {
+let make = (~goBack, ~goToSpecEditor) => {
   <div className="min-h-screen bg-gray-50">
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,31 +23,49 @@ let make = (~goBack) => {
           name="Google OAuth"
           description="Google Cloud OAuth 2.0 configuration"
           icon="🔍"
+          onClick={_ => goToSpecEditor()}
         />
         <TemplateCard
           name="GitHub OAuth"
           description="GitHub OAuth Apps configuration"
           icon="🐙"
+          onClick={_ => goToSpecEditor()}
+        />
+        <TemplateCard
+          name="Login.gov Sandbox"
+          description="Login.gov OIDC Sandbox environment"
+          icon="🇺🇸"
+          onClick={_ => goToSpecEditor()}
+        />
+        <TemplateCard
+          name="ID.me Sandbox"
+          description="ID.me OIDC Sandbox environment"
+          icon="🆔"
+          onClick={_ => goToSpecEditor()}
         />
         <TemplateCard
           name="Ory Hydra"
           description="Ory Hydra OAuth 2.0 server"
           icon="🌊"
+          onClick={_ => goToSpecEditor()}
         />
         <TemplateCard
           name="Auth0"
           description="Auth0 Universal Login"
           icon="🔐"
+          onClick={_ => goToSpecEditor()}
         />
         <TemplateCard
           name="Microsoft Azure"
           description="Azure Active Directory"
           icon="🏢"
+          onClick={_ => goToSpecEditor()}
         />
         <TemplateCard
           name="Custom Provider"
           description="Build your own OAuth configuration"
           icon="⚙️"
+          onClick={_ => goToSpecEditor()}
         />
       </div>
     </div>

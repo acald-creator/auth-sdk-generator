@@ -18,7 +18,8 @@ function TemplateCard(props) {
                       className: "text-gray-600 text-sm"
                     })
               ],
-              className: "bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-md transition-shadow"
+              className: "bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-md transition-shadow",
+              onClick: props.onClick
             });
 }
 

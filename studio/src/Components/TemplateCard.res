@@ -1,7 +1,9 @@
 // Template Card Component
 @react.component
-let make = (~name, ~description, ~icon) => {
-  <div className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-md transition-shadow">
+let make = (~name, ~description, ~icon, ~onClick=?) => {
+  <div
+    className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-md transition-shadow"
+    ?onClick>
     <div className="text-2xl mb-3">
       {icon->React.string}
     </div>

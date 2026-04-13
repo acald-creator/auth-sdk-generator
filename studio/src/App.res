@@ -16,6 +16,6 @@ let make = () => {
   switch currentView {
   | Dashboard => <StudioDashboard goToSpecEditor goToTemplates />
   | SpecEditor => <StudioSpecEditor goBack=goToDashboard />
-  | Templates => <TemplatesView goBack=goToDashboard />
+  | Templates => <TemplatesView goBack=goToDashboard goToSpecEditor />
   }
 }
